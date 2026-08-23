@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - 'experiments/cifar_resnet_pilot.py'
+      - 'experiments/cifar_resnet_finetune_pilot.py'
       - '.github/workflows/cifar_resnet_pilot.yml'
   workflow_dispatch:
 
@@ -36,13 +37,13 @@ jobs:
               -o /tmp/cifar.tar.gz
             tar -xzf /tmp/cifar.tar.gz -C .cache/cifar10
           fi
-      - name: Run paired pilot
+      - name: Run pretrained paired pilot
         run: |
           mkdir -p artifacts
-          python experiments/cifar_resnet_pilot.py \
-            --reps 3 --epochs 3 --train-per-class 600 --test-per-class 300 \
-            --test-envs 16 --k 8 --q 4 \
-            --output artifacts/cifar_resnet_pilot.csv
+          python experiments/cifar_resnet_finetune_pilot.py \
+            --reps 1 --pretrain-epochs 10 --finetune-epochs 2 \
+            --train-per-class 600 --test-per-class 300 --test-envs 16 --k 8 --q 4 \
+            --output artifacts/cifar_resnet_finetune_pilot.csv
       - uses: actions/upload-artifact@v4
         if: always()
         with:
