@@ -6,8 +6,8 @@ import pandas as pd
 import torch
 import torch.nn.functional as F
 
-from experiments.cifar_resnet_pilot import (
-    CIFARResNet20, apply_environment, configure, evaluate, head_gradient_directions,
+from cifar_resnet_pilot import (
+    CIFARResNet20, apply_environment, configure, evaluate,
     load_cifar, normalize, seed_everything, select_loss, build_schedule,
 )
 
@@ -38,7 +38,7 @@ def run(args):
             for step,idx,cand in schedule:
                 seeds=[train_env[e] for e in cand]
                 xb=torch.cat([normalize(apply_environment(xtr[idx],s,step)) for s in seeds],0)
-                logits,h=model(xb)
+                logits,_=model(xb)
                 per=F.cross_entropy(logits,ytr[idx].repeat(args.k),reduction='none').reshape(args.k,-1)
                 chosen=select_loss(per.mean(1),args.q)
                 opt.zero_grad(set_to_none=True); per[chosen].mean().backward(); opt.step()
