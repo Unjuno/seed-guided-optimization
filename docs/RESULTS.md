@@ -33,6 +33,18 @@ Environment-parameter distance is not sufficient in the MLP benchmark. Parameter
 
 A cheap prefilter based on RNG coordinates that actually drive the environment generator reduced candidate gradient evaluations without degrading the main metrics at moderate compression. The current conservative point is 16 candidates → 12 prefiltered candidates → 4 backward environments.
 
+### Relevant RNG coordinates can be estimated from training gradients
+
+A proof-of-concept removed direct knowledge of the seven RNG coordinates that drive the geometric environment. A separate calibration pool of 128 environment seeds and training-only examples was used to fit a ridge model from 64 raw RNG outputs to a 16-dimensional PCA representation of final-layer gradient signatures. Feature relevance was then defined from the fitted coefficient norms.
+
+The learned top-seven coordinates recovered five of the seven truly relevant coordinates in its first five ranks. At a 16 → 8 candidate prefilter:
+
+- learned-top7 vs. raw64: held-out mean **+1.85 pp** (`Holm p=0.00282`), p10 **+2.11 pp** (`Holm p=0.00747`);
+- learned-top7 vs. oracle-seven: no tested metric differed significantly after Holm correction;
+- gradient candidate evaluations were reduced from 1280 to 640 per run and measured training time fell by about 35% in this CPU benchmark.
+
+This supports automatic relevance discovery in the tested generator. It does **not** remove the compression trade-off: both learned-top7 and oracle-seven at 16 → 8 had weaker lower-tail metrics than evaluating all 16 gradient candidates. The fingerprint result and the choice of compression ratio should therefore be treated as separate questions.
+
 ### Compression has a real failure boundary
 
 Reducing the candidate set to 4 removed too much gradient coverage: p10 and minimum held-out accuracy dropped sharply. Candidate reduction is therefore an optimization problem, not a monotonic speedup.
@@ -44,11 +56,12 @@ Reducing the candidate set to 4 removed too much gradient coverage: p10 and mini
 - Full-gradient signatures do not automatically improve selection over final-layer signatures.
 - A fixed selector learned on one task is not universally transferable.
 - Long raw RNG fingerprints containing irrelevant coordinates are worse than short relevant fingerprints.
+- Directly predicting a compact gradient embedding from the 64-value RNG fingerprint was weaker than using learned coordinate relevance in the first automatic-fingerprint experiment.
 - Low-heterogeneity tasks may show almost no benefit from active seed selection.
 - An under-tuned optimizer can create a false negative; optimizer hyperparameters must be tuned independently of the selector comparison.
 
 ## Public claim boundary
 
-The present experiments justify saying that gradient-aware environment-seed selection **can** improve optimization/generalization in tested stochastic-shift settings and that the effect has replicated across one MLP, one CNN, AdamW, and tuned SGD+momentum.
+The present experiments justify saying that gradient-aware environment-seed selection **can** improve optimization/generalization in tested stochastic-shift settings and that the effect has replicated across one MLP, one CNN, AdamW, and tuned SGD+momentum. They also provide a first proof-of-concept that training-only gradient information can identify useful coordinates in an otherwise noisy RNG fingerprint.
 
-They do not justify saying that a universally optimal seed family exists, that seed values themselves have semantic classes, or that the method is validated on modern large-scale neural networks.
+They do not justify saying that a universally optimal seed family exists, that seed values themselves have semantic classes, that automatic RNG discovery transfers across generators, or that the method is validated on modern large-scale neural networks.
