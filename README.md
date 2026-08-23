@@ -4,25 +4,26 @@
 
 Random seeds are usually treated as a reproducibility control. This project studies a different view: a seed can index a stochastic training environment, which changes the gradient trajectory even when the underlying training data and model are unchanged. Instead of consuming seeds uniformly at random, we test whether training can improve by selecting seeds that are both **hard** for the current model and **non-redundant in gradient space**.
 
-> Status: experimental research code. Results are reproducible on the small CPU benchmarks in this repository, but the method is not yet established as a general-purpose training algorithm.
+> Status: experimental research code. The main small-scale findings now replicate across an MLP and a CNN and across tuned AdamW and SGD+momentum, but large-scale/general-purpose validity is not established.
 
 ## Core hypothesis
 
-For a stochastic environment seed `s`, let `g_s` denote the gradient induced by the current model and minibatch. Different seeds induce different stochastic gradients. Under a fixed compute budget, selecting a small subset of informative seed environments may produce a better update than either a single seed or naive seed sampling.
+For a stochastic environment seed `s`, let `g_s` denote the gradient induced by the current model and minibatch. Different seeds induce different stochastic gradients. Under finite compute, a small informative subset of seed environments can sometimes produce a better update than naive, random, or loss-only seed selection.
 
-The strongest result so far is not "more seeds are always better." Instead:
+The evidence does **not** support "more seeds are always better." Instead:
 
 1. **Seed/environment choice changes gradient direction and final performance.**
 2. **Loss-only hard-seed selection is not always optimal.**
-3. **Gradient novelty can improve held-out environment performance, especially under structured domain shift.**
-4. **Raw RNG-series compression can reduce candidate evaluations, but only when the fingerprint contains RNG components that actually affect the training environment.**
-5. **There is a compute–coverage trade-off:** too much compression loses useful gradient directions; too many candidates waste compute.
+3. **Gradient novelty improves held-out performance under structured domain shift in the tested MLP and CNN.**
+4. **The effect survives tuned AdamW and tuned SGD+momentum in the tested MLP.**
+5. **RNG-series compression can reduce candidate evaluations, but only when the fingerprint contains RNG components that actually affect the training environment.**
+6. **There is a compute–coverage trade-off:** too much compression loses useful gradient directions; too many candidates waste compute.
 
 ## Key results
 
-All headline numbers below use paired runs with held-out environment seeds.
+All headline comparisons use paired runs with held-out environment seeds. Multiple outcome tests use Holm correction where reported.
 
-### Gradient novelty vs. environment-parameter diversity
+### 1. MLP: gradient novelty vs. environment-parameter diversity
 
 On a geometric-shift Digits benchmark (rotation, translation, blur, contrast, brightness, noise), selecting one hard seed plus three gradient-novel seeds outperformed selecting physically diverse environments with nearly the same transformation-space diversity.
 
@@ -32,9 +33,38 @@ On a geometric-shift Digits benchmark (rotation, translation, blur, contrast, br
 | Parameter-novel | 51.66% | 40.98% |
 | **Gradient-novel** | **53.11%** | **41.78%** |
 
-Gradient-novel vs. parameter-novel improved mean accuracy by about **+1.45 percentage points** in the paired experiment.
+Gradient-novel vs. parameter-novel improved held-out mean accuracy by about **+1.45 percentage points** in the paired experiment.
 
-### Cross-task meta selector under geometric shift
+### 2. CNN replication
+
+The same seed-selection idea was re-tested with a small convolutional network on the same held-out geometric environments.
+
+| CNN selector | Held-out mean | p10 | Minimum env. |
+|---|---:|---:|---:|
+| Loss-hard | 47.19% | 36.38% | 27.37% |
+| **Gradient-novel** | **49.44%** | **38.20%** | **29.94%** |
+| Parameter-novel | 48.85% | 37.53% | 29.30% |
+| RNG12 → gradient-novel | 49.05% | 37.47% | 28.29% |
+
+For 20 paired runs, gradient-novel vs. loss-hard improved:
+
+- held-out mean by **+2.25 pp** (`Holm p = 0.0171`);
+- minimum-environment accuracy by **+2.57 pp** (`Holm p = 0.00573`).
+
+The p10 improvement was +1.82 pp but did not survive five-metric Holm correction. Parameter novelty also helped the CNN, so the stronger MLP claim that gradient novelty clearly dominates parameter novelty is not yet architecture-general.
+
+### 3. Optimizer ablation
+
+SGD+momentum was tuned with a separate loss-hard learning-rate sweep before selector comparison. Gradient-novel then improved held-out performance under both tested optimizers.
+
+| Optimizer | Mean gain vs. loss-hard | p10 gain | Holm p (mean) | Holm p (p10) |
+|---|---:|---:|---:|---:|
+| AdamW | **+2.69 pp** | **+2.94 pp** | 5.1e-5 | 0.00142 |
+| SGD+momentum | **+1.88 pp** | **+3.02 pp** | 0.0362 | 0.00250 |
+
+This weakens the explanation that the effect is specific to AdamW. It does not establish optimizer universality.
+
+### 4. Cross-task meta selector under geometric shift
 
 A selector trained on earlier tasks and frozen before evaluation improved over pure loss-hard selection on the geometric-shift benchmark:
 
@@ -46,7 +76,7 @@ A selector trained on earlier tasks and frozen before evaluation improved over p
 
 The effect was not universal: on a low-heterogeneity Breast Cancer benchmark, selectors were essentially tied. This negative result is retained as evidence that environment structure matters.
 
-### RNG-series prefiltering
+### 5. RNG-series prefiltering
 
 In the geometric benchmark, each environment is generated by seven relevant random draws. Using exactly those seven RNG outputs as a cheap prefilter preserved useful seed diversity; adding unrelated RNG outputs degraded selection quality.
 
@@ -61,9 +91,9 @@ With 16 initial candidate seeds and 4 backward seeds:
 
 The current conservative operating point is **16 → 12 RNG-prefiltered candidates → 4 gradient-selected backward environments**.
 
-### Parallel seed count and wall-clock trade-off
+### 6. Parallel seed count and wall-clock trade-off
 
-More seed environments improve gradient estimation, but under a fixed forward budget they reduce optimizer update count. With vectorized environment evaluation, the wall-clock optimum can move to a larger seed batch.
+More seed environments improve gradient estimation, but under a fixed forward budget they reduce optimizer update count. With vectorized environment evaluation, the wall-clock optimum can move to a larger seed batch. This result is hardware-dependent and should not be transferred directly to GPUs.
 
 ## What did not work
 
@@ -71,11 +101,12 @@ The repository intentionally keeps negative results:
 
 - worst-seed-only training can reduce mean and clean performance;
 - pure gradient-diversity maximization is weaker than hardness + novelty;
-- physically diverse environment parameters are weaker than model-dependent gradient novelty in the geometric benchmark;
+- physically diverse environment parameters are weaker than model-dependent gradient novelty in the MLP geometric benchmark;
 - using long unrelated RNG fingerprints can make seed prefiltering worse;
 - aggressive candidate compression (16 → 4) damages lower-tail performance;
 - a selector learned on one task does not automatically transfer to every dataset;
-- full-parameter gradient signatures were slower and did not outperform a cheaper final-layer gradient proxy in the tested MLP.
+- full-parameter gradient signatures were slower and did not outperform a cheaper final-layer gradient proxy in the tested MLP;
+- an initially under-tuned SGD configuration incorrectly suggested an optimizer-specific failure, motivating explicit optimizer tuning before comparison.
 
 ## Repository structure
 
@@ -90,7 +121,16 @@ The repository intentionally keeps negative results:
 │   ├── RESULTS.md
 │   └── LIMITATIONS.md
 ├── experiments/
+│   ├── common.py
+│   ├── mlp_geometric.py
+│   ├── cnn_replication.py
+│   ├── optimizer_ablation.py
+│   └── rng_compression_sweep.py
 └── results/
+    ├── public_key_findings.csv
+    ├── cnn_replication_paired20.csv
+    ├── optimizer_ablation_paired20.csv
+    └── rng_compression_summary40.csv
 ```
 
 ## Reproduction
@@ -113,29 +153,28 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-Experiment files accept a half-open replicate range, e.g.:
+Run examples from the repository root:
 
 ```bash
-python experiments/geometric_shift.py 0 10
-python experiments/gradient_vs_parameter_novelty.py 0 20
-python experiments/rng_compression_sweep.py 0 20
+python experiments/mlp_geometric.py --start 0 --end 20 --output mlp.csv
+python experiments/cnn_replication.py --start 0 --end 20 --output cnn.csv
+python experiments/optimizer_ablation.py --start 0 --end 20 --output optimizers.csv
+python experiments/rng_compression_sweep.py --start 0 --end 20 --output compression.csv
 ```
-
-The original container scripts write CSVs under `/mnt/data/`; change the final output path if running elsewhere.
 
 ## Interpretation
 
 The current evidence supports the narrower statement:
 
-> Under structured stochastic environment shifts, seed/environment selection based on current model gradients can improve optimization/generalization relative to naive or loss-only seed selection in the tested settings.
+> Under structured stochastic environment shifts, seed/environment selection based on current model gradients can improve optimization/generalization relative to loss-only seed selection in multiple tested small-network settings.
 
 It does **not** establish that a numerically "good seed" exists independently of the model, data, environment generator, or training state.
 
-## Research roadmap
+## Remaining validation
 
-The next validation targets are CNN replication, optimizer robustness, larger real datasets, GPU/vectorized wall-clock evaluation, and automatic discovery of compact RNG fingerprints when the relevant RNG coordinates are unknown.
+The highest-priority gaps are now larger real-image datasets, GPU/vectorized wall-clock evaluation, automatic discovery of compact RNG fingerprints when relevant RNG coordinates are unknown, and validation on substantially larger architectures/tasks.
 
-See [`docs/LIMITATIONS.md`](docs/LIMITATIONS.md) for the claims that should not yet be made.
+See [`docs/LIMITATIONS.md`](docs/LIMITATIONS.md) for the current claim boundary.
 
 ## License
 
