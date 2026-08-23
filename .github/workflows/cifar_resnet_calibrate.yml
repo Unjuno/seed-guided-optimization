@@ -40,7 +40,7 @@ jobs:
       - name: Run loss-hard calibration
         run: |
           mkdir -p artifacts
-          python experiments/cifar_resnet_calibrate.py \
+          PYTHONPATH=. python experiments/cifar_resnet_calibrate.py \
             --reps 1 --epochs 8 --train-per-class 600 --test-per-class 300 \
             --test-envs 16 --k 8 --q 4 \
             --output artifacts/cifar_resnet_calibrate.csv
