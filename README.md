@@ -43,7 +43,7 @@ The same seed-selection idea was re-tested with a small convolutional network on
 |---|---:|---:|---:|
 | Loss-hard | 47.19% | 36.38% | 27.37% |
 | **Gradient-novel** | **49.44%** | **38.20%** | **29.94%** |
-| Parameter-novel | 48.85% | 37.53% | 29.30% |
+| Parameter-novel | 48.96% | 37.59% | 29.38% |
 | RNG12 → gradient-novel | 49.05% | 37.47% | 28.29% |
 
 For 20 paired runs, gradient-novel vs. loss-hard improved:
