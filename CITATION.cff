@@ -1,0 +1,14 @@
+cff-version: 1.2.0
+message: "If you use this experimental code or results, please cite this repository."
+title: "Seed-Guided Optimization"
+type: software
+authors:
+  - family-names: "Unjuno"
+repository-code: "https://github.com/Unjuno/seed-guided-optimization"
+url: "https://github.com/Unjuno/seed-guided-optimization"
+license: Apache-2.0
+version: 0.1.0
+date-released: 2026-08-23
+abstract: >-
+  Experimental research code for gradient-aware selection and compression of
+  stochastic training-environment seeds in neural-network optimization.
