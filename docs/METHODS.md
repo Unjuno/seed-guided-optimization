@@ -1,48 +1,96 @@
 # Methods
 
-## Problem formulation
+## 1. Problem formulation
 
-A seed indexes a stochastic training environment. Depending on the experiment, the seed controls one or more of input noise, masking, geometric transformations, contrast/brightness, blur, minibatch ordering, or stochastic-layer randomness.
+A seed is treated as an index into a stochastic training environment, not as a semantic label. Depending on the experiment, the seed controls input noise, masking, geometric transformations, blur, contrast/brightness, minibatch ordering, or stochastic-layer randomness.
 
-For a fixed minibatch and current model parameters, each environment induces an environment loss and a gradient signature. Candidate seed environments are ranked or selected using combinations of:
+For a fixed minibatch and current model, each candidate environment produces:
 
-- **hardness:** environment mean cross-entropy loss;
-- **gradient novelty:** cosine distance between normalized gradient signatures;
-- **coverage:** preference for rarely selected environments;
-- **stagnation:** preference for environments whose EMA loss is not improving.
+- **hardness:** mean cross-entropy loss for that environment;
+- **gradient signature:** a normalized update-direction proxy;
+- **gradient novelty:** cosine distance from already selected gradient signatures;
+- optionally **coverage/history** terms in active-selection experiments.
 
-The cheapest useful gradient signature in the MLP experiments is the gradient of the final linear layer, computed analytically from logits and penultimate features. Full-network gradient signatures were tested and did not improve the reported MLP results.
+The central comparison is between loss-only selection and selectors that retain hard environments while avoiding redundant gradient directions.
 
-## Paired experimental design
+## 2. Models
 
-Methods within a replicate share the initial model seed, minibatch order, candidate-environment schedule, train/test data split, and held-out environment pool. This makes method comparisons paired rather than independent.
+### MLP
 
-## Held-out environment evaluation
+The main geometric benchmark uses a small MLP on scikit-learn Digits. The head-gradient signature is computed from logits and penultimate features.
 
-Training and evaluation use disjoint environment-seed ranges. Test environments are never used by the selector during training.
+### CNN replication
 
-Reported metrics include mean accuracy, standard deviation across held-out environments, 10th percentile accuracy (`p10`), minimum environment accuracy, and clean-data accuracy when applicable.
+A small CNN is evaluated on the same train/test split and the same held-out geometric environment construction. This is an architecture replication, not evidence for modern large-scale CNNs.
 
-## Geometric-shift benchmark
+Full-network gradient signatures were also tested in the MLP and did not improve over the cheaper final-layer proxy.
 
-Dataset: scikit-learn Digits, reshaped to 8×8 grayscale images.
+## 3. Geometric stochastic environments
 
-A seed deterministically generates seven environment parameters: rotation angle, x translation, y translation, Gaussian blur, contrast, brightness shift, and additive Gaussian noise. The same environment transformation is applied across examples, producing a shared domain shift rather than independent sample noise.
+Digits images are reshaped to 8×8 grayscale images. A seed deterministically generates seven shared environment parameters:
 
-## RNG prefiltering
+1. rotation angle;
+2. x translation;
+3. y translation;
+4. Gaussian blur;
+5. contrast;
+6. brightness shift;
+7. additive Gaussian noise.
 
-RNG prefilter experiments distinguish three objects:
+The same transformation parameters are shared across samples within an environment, so the seed represents a domain-like shift rather than independent per-sample noise.
+
+Training and held-out evaluation use disjoint seed ranges.
+
+## 4. Paired experimental design
+
+Within each replicate, compared methods share:
+
+- initial model parameters;
+- train/test data split;
+- minibatch order;
+- candidate-environment schedule;
+- held-out environment pool.
+
+This makes method comparisons paired.
+
+Reported metrics are:
+
+- held-out environment mean accuracy;
+- standard deviation across held-out environments;
+- 10th-percentile accuracy (`p10`);
+- minimum environment accuracy;
+- clean-data accuracy when applicable.
+
+## 5. Optimizer ablation and tuning fairness
+
+The optimizer comparison uses AdamW and SGD with momentum.
+
+AdamW uses the established benchmark configuration. SGD+momentum learning rate is selected **before selector comparison**, using a separate loss-hard-only learning-rate sweep. The selected SGD learning rate is `0.2`. This separation prevents selector comparisons from inheriting obvious optimizer mis-tuning.
+
+See:
+
+- `results/sgd_lr_sweep_summary.csv`
+- `results/optimizer_ablation_paired20.csv`
+
+## 6. RNG prefiltering
+
+RNG-prefilter experiments distinguish:
 
 1. the integer seed;
 2. a finite RNG-output fingerprint;
-3. the model-dependent gradient signature produced by the resulting environment.
+3. the environment parameters generated from that fingerprint;
+4. the model-dependent gradient signature induced by that environment.
 
-The best current prefilter uses the seven RNG draws that actually determine the seven environment parameters. Adding unrelated RNG outputs degraded the distance metric.
+The strongest current cheap prefilter uses the seven RNG draws that actually determine the seven geometric environment parameters. Adding unrelated RNG coordinates degrades the distance metric.
 
-A farthest-point procedure retains a diverse subset in RNG-fingerprint space before more expensive model forward/gradient calculations.
+A farthest-point procedure reduces the candidate set before more expensive forward/gradient evaluation.
 
-## Statistical analysis
+## 7. Statistical analysis
 
-Primary experiments use paired replicates. Where multiple outcomes are tested together, Holm correction is used for family-wise error control. Bootstrap confidence intervals are used in several experiment families.
+Primary comparisons use paired replicates. When five outcome metrics are tested as one family, Holm correction controls family-wise error.
 
-Negative as well as positive results are retained. A result is not treated as general simply because an uncorrected p-value is below 0.05.
+A result is not promoted to a public claim solely because an uncorrected p-value is below 0.05. Negative results and failed hypotheses are retained.
+
+## 8. Reproducibility assumptions
+
+Published CPU experiments use deterministic PyTorch algorithms and `torch.set_num_threads(1)`. Wall-clock numbers therefore describe the stated hardware/software regime only and should not be transferred directly to GPU execution.
