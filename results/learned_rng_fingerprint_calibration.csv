@@ -1,0 +1,6 @@
+item,value
+ridge_alpha,100.0
+top7_indices,1 0 2 4 3 10 26
+true_relevant_ranks,2 1 3 5 4 9 41
+candidate_reduction,16->8
+runtime_reduction_vs_grad16,0.354288
