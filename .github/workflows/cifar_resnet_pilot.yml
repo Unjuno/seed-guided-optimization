@@ -40,7 +40,7 @@ jobs:
       - name: Run pretrained paired pilot
         run: |
           mkdir -p artifacts
-          python experiments/cifar_resnet_finetune_pilot.py \
+          PYTHONPATH=. python experiments/cifar_resnet_finetune_pilot.py \
             --reps 1 --pretrain-epochs 10 --finetune-epochs 2 \
             --train-per-class 600 --test-per-class 300 --test-envs 16 --k 8 --q 4 \
             --output artifacts/cifar_resnet_finetune_pilot.csv
