@@ -6,11 +6,11 @@ import pandas as pd
 import torch
 import torch.nn.functional as F
 
-from experiments.cifar_resnet_pilot import (
+from cifar_resnet_pilot import (
     CIFARResNet20, build_schedule, configure, head_gradient_directions,
     load_cifar, normalize, seed_everything, select_gradnov, select_loss,
 )
-from experiments.cifar_resnet_finetune_pilot import (
+from cifar_resnet_finetune_pilot import (
     cache_schedule, cache_test, evaluate_cached, pretrain,
 )
 
