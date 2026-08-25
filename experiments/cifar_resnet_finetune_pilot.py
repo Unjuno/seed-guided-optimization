@@ -8,7 +8,7 @@ import torch
 import torch.nn.functional as F
 from scipy.stats import ttest_rel
 
-from experiments.cifar_resnet_pilot import (
+from cifar_resnet_pilot import (
     CIFARResNet20, configure, seed_everything, load_cifar, normalize,
     build_schedule, apply_environment, normalized_env_parameters,
     head_gradient_directions, select_loss, select_gradnov, select_paramnov,
