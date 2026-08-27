@@ -54,10 +54,16 @@ The 40-pair held-out mean gain is +0.1206 pp with Holm(5) p=0.013361. p10/minimu
 
 ## 6. Prospective representation-rank validation
 
-- `prospective_rep_rank_predictions6.csv` — frozen predictions and observed directions for the six registered tests.
+Original six-test sequence:
+- `prospective_rep_rank_predictions6.csv` — frozen predictions and observed directions.
 - `prospective_rep_rank_summary6.csv` — compact diagnostic/outcome aggregate.
 
-The frozen sign rule matched all six registered directions. Three tests share Digits; do not treat 6/6 as six independent datasets. The attempted tail rule is retired.
+Independent architecture-shift extension:
+- `fashion_transformer_rep_rank_all10.csv` — 10 paired FashionMNIST/Tiny Transformer replicate outputs.
+- `fashion_transformer_rep_rank_deltas10.csv` — paired rank and held-out deltas.
+- `fashion_transformer_rep_rank_decision10.csv` — frozen aggregate decision.
+
+The FashionMNIST/Tiny Transformer test produced mean delta representation effective rank +0.05415 and mean held-out accuracy benefit +0.7363 pp; the preregistered directional decision was **PASS**. Combined with the original six tests, the frozen sign rule is 7/7 across five datasets. Three tests share Digits, and the Transformer is deliberately small; this is not a universal-gate claim. The attempted tail rule remains retired.
 
 ## 7. Efficiency
 
