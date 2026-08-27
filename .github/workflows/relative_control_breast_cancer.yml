@@ -1,0 +1,40 @@
+name: Relative controller real-tabular validation
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'experiments/relative_control_breast_cancer.py'
+      - '.github/workflows/relative_control_breast_cancer.yml'
+  workflow_dispatch:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        regime: [low, high]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      - name: Run 30 paired replicates
+        run: |
+          mkdir -p artifacts
+          python experiments/relative_control_breast_cancer.py ${{ matrix.regime }} \
+            --start 0 --end 30 \
+            --output artifacts/relative_control_breast_cancer_${{ matrix.regime }}_all30.csv
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: relative-control-breast-cancer-${{ matrix.regime }}
+          path: artifacts/*.csv
+          if-no-files-found: warn
