@@ -1,6 +1,6 @@
 # Research status
 
-This file is the shortest map from experiment to claim status. A result is promoted to **supported** only when the stated comparison and statistical rule are satisfied. Null and negative results are retained.
+A finding is labeled **supported** only within its stated comparison, task, and statistical rule. Negative/null results are retained.
 
 ## Supported findings
 
@@ -12,16 +12,17 @@ This file is the shortest map from experiment to claim status. A result is promo
 | Optimizer replication | tuned AdamW and tuned SGD+momentum | effect is not explained by AdamW alone in the tested MLP |
 | RNG candidate compression | prefix/compression sweeps | moderate cheap prefiltering can reduce gradient evaluations; aggressive compression loses tail coverage |
 | Learned RNG relevance | original + shifted-coordinate generators | useful RNG relevance can be learned from training-only gradient information; stale fingerprint transfer fails |
-| Soft RNG relevance | cross-generator weighted-top12 control | soft relevance weighting is more robust than forcing an exact hard top-k coordinate set in the tested generator |
-| Relative redundancy control | Digits + independent Synthetic | absolute cosine targets do not transfer; a within-step normalized operating point transfers better in the tested tasks |
-| Gradient mechanism audit | mean/tail gradient + one-step update tests | final gains are not explained by superior mean-gradient estimation or maximal one-step loss decrease alone |
+| Soft RNG relevance | cross-generator weighted-top12 control | soft relevance weighting is more robust than forcing an exact hard top-k set in the tested generator |
+| Relative redundancy control | Digits + independent Synthetic | absolute cosine targets do not transfer; within-step normalization transfers better in the tested tasks |
+| CIFAR-10 / ResNet-20 mean | 40 paired primary runs | mean +0.1206 pp; Holm(5) p=0.01336 under the unchanged primary protocol |
+| Gradient mechanism audit | mean/tail gradient + one-step tests | final gains are not explained by superior mean-gradient estimation or maximal one-step loss decrease alone |
 
-## Suggestive / not confirmatory
+## Prospectively supported but not universal-proof
 
 | Topic | Evidence | Current conclusion |
 |---|---|---|
-| CIFAR-10 / ResNet-20 | first 20 paired primary runs | mean +0.138 pp and p10 +0.143 pp, but five-metric Holm correction is not significant; 40-pair extension is in PR #11 |
-| Cross-task controller universality | relative-control studies | normalized control is promising, but the correct operating point is not established as universal |
+| Representation effective-rank sign | six registered tests | sign(delta representation effective rank) matched sign(mean held-out benefit) in all six tests, including a negative Diabetes regression test; three tests share Digits |
+| CIFAR p10/minimum direction | 40 paired primary runs | positive direction, but Holm p=0.05294 / 0.08815; tail robustness remains unconfirmed |
 
 ## Important negative or null results
 
@@ -33,25 +34,24 @@ This file is the shortest map from experiment to claim status. A result is promo
 - Long raw RNG fingerprints with irrelevant coordinates can be worse than compact relevant fingerprints.
 - An old learned RNG fingerprint does not transfer automatically when the generator moves relevant coordinates.
 - Gradient novelty is not a superior estimator of the mean expected gradient relative to random sampling in the mechanism audit.
-- Loss-hard selection produces larger immediate one-step loss decrease in the tested audit, so the long-run benefit is not greedy loss reduction.
-- An absolute selected-gradient cosine target can be infeasible on another task and force the controller to saturate.
-- Initial optimizer under-tuning can create a false selector failure; optimizer tuning must be separated from selector evaluation.
+- Loss-hard selection produces larger immediate one-step loss decrease in the tested audit.
+- Larger accumulated gradient effective rank does not imply benefit; Breast-high is a direct counterexample.
+- An absolute selected-gradient cosine target can be infeasible on another task and force controller saturation.
+- Relative redundancy control is not a task-level safety guarantee; Breast-high remains a counterexample.
+- The attempted per-environment representation-rank-SD tail rule failed on Wine and is retired.
+- Optimizer under-tuning can create a false selector failure.
 
-## In progress
+## Current open work
 
-- **Issue #1 / PR #11:** extend CIFAR-10 / ResNet-20 from 20 to 40 paired replicates without changing the protocol.
-- **Issue #2:** GPU-vectorized wall-clock benchmark.
-- **PR #10:** relative redundancy control on Breast Cancer Wisconsin low/high corruption regimes.
-- **Issue #12:** identify trajectory-level diagnostics that predict when novelty helps without using held-out test environments.
-
-## Completed roadmap items
-
-- **Issue #3:** training-only discovery of compact RNG relevance without being told the relevant generator coordinates — closed as completed.
+- Prospectively falsify the representation-rank sign rule on genuinely new data/generator/architecture conditions.
+- Develop a new training-only tail-safety diagnostic without retuning the failed rule.
+- Run GPU-vectorized wall-clock benchmarks at matched update/candidate budgets.
+- Test naturally stochastic simulators or non-handcrafted environment processes.
 
 ## Public claim boundary
 
 Safe public wording:
 
-> Gradient-aware selection of stochastic training environments can improve held-out optimization/generalization under some structured stochastic shifts in the tested settings, and candidate-selection overhead can be reduced using learned or known stochastic fingerprints.
+> Gradient-aware selection of stochastic training environments can improve held-out optimization/generalization under some structured stochastic shifts in the tested settings. A fixed-protocol CIFAR-10 / ResNet-20 study supports a small mean improvement, and training-only representation effective-rank change is a promising prospective predictor of the sign of mean benefit.
 
-Do not claim a universally good seed family, universal selector, universal redundancy target, large-scale validation, or GPU efficiency advantage.
+Do not claim a universally good seed family, universal selector/controller, universal representation-rank gate, confirmed CIFAR tail robustness, or GPU efficiency advantage.

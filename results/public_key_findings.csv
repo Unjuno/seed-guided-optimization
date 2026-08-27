@@ -9,5 +9,6 @@ Optimizer ablation: SGD+momentum tuned,20,gradnov4 - loss4,p10_test,3.017,0.0025
 RNG prefilter compression,40,prefilter12 - full16,sd_test,-0.309,0.0477,supported
 Learned RNG fingerprint: original generator,20,learned_top7 - raw64,mean_test,1.85,0.00282,supported
 Relative redundancy control: Digits,20,relative0.15 - beta0,mean_test,4.625,0.000000509,supported
-CIFAR-10 ResNet-20 primary first stage,20,gradnov4 - loss4,mean_test,0.138,0.111957,suggestive
-CIFAR-10 ResNet-20 primary first stage,20,gradnov4 - loss4,p10_test,0.1433,0.129751,suggestive
+CIFAR-10 ResNet-20 primary,40,gradnov4 - loss4,mean_test,0.1206,0.013361,supported
+CIFAR-10 ResNet-20 primary,40,gradnov4 - loss4,p10_test,0.1213,0.052939,not_confirmed_tail
+CIFAR-10 ResNet-20 primary,40,gradnov4 - loss4,min_test,0.1875,0.088149,not_confirmed_tail

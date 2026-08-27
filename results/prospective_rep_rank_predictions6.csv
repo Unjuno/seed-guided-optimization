@@ -1,0 +1,7 @@
+test,dataset,task_type,delta_rep_rank,delta_grad_rank,predicted_direction,observed_mean_benefit,benefit_definition,raw_p,direction_match
+photometric,Digits,classification,0.040240335122613304,0.6173633450754988,positive,0.0028932592645287527,accuracy(gradnov)-accuracy(loss_hard),0.12527872736638526,True
+unstructured_pixel,Digits,classification,0.07271841711798546,-0.025181063791315156,positive,0.0013567414693534175,accuracy(gradnov)-accuracy(loss_hard),0.1389521894394475,True
+band_occlusion,Digits,classification,0.2075537610658344,0.4526648082003343,positive,0.00714606884866954,accuracy(gradnov)-accuracy(loss_hard),4.289143501944361e-05,True
+wine,Wine,classification,0.13653065710430506,2.1473092275865597,positive,0.00335648275911809,accuracy(gradnov)-accuracy(loss_hard),1.7937665232200002e-05,True
+iris,Iris,classification,0.03066519608128579,1.1775837558631612,positive,0.0011249999329447868,accuracy(gradnov)-accuracy(loss_hard),0.030263846223916913,True
+diabetes_regression,Diabetes,regression,-0.024911030201830546,3.676400690953404,negative,-0.0013464137539267395,MSE(loss_hard)-MSE(gradnov),0.19607760138938357,True

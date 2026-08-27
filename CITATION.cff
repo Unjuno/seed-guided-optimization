@@ -7,15 +7,17 @@ authors:
 repository-code: "https://github.com/Unjuno/seed-guided-optimization"
 url: "https://github.com/Unjuno/seed-guided-optimization"
 license: Apache-2.0
-version: 0.2.0
-date-released: 2026-08-23
+version: 0.3.0
+date-released: 2026-08-28
 keywords:
   - stochastic optimization
   - neural networks
   - gradient selection
   - random seeds
   - robust learning
+  - representation geometry
 abstract: >-
   Experimental research code and paired benchmark results for gradient-aware
-  selection and compression of stochastic training-environment seeds in neural
-  network optimization, including MLP/CNN and AdamW/SGD+momentum replications.
+  selection of stochastic training environments, including structured
+  MLP/CNN studies, a 40-pair CIFAR-10/ResNet-20 validation, RNG candidate
+  compression, and prospective representation-geometry diagnostics.

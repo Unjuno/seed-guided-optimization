@@ -1,124 +1,88 @@
 # Results summary
 
-The repository separates **supported**, **suggestive**, and **negative/null** findings. Headline comparisons are paired, use disjoint held-out environment seeds, and apply Holm correction when five outcome metrics are treated as one family.
+The repository separates **supported**, **prospective**, **negative/null**, and **open** findings. Headline comparisons are paired, use disjoint held-out environment seeds, and apply Holm correction when five outcome metrics are one family.
 
 ## Supported findings
 
-### 1. Seed/environment choice changes optimization trajectory
+### 1. Structured geometric benchmark
+Gradient novelty improves held-out performance over loss-hard selection, and in the controlled MLP test it outperforms physical transformation-parameter novelty by about **+1.45 pp** held-out mean.
 
-With the underlying training dataset held fixed, stochastic environments induced by different seeds produce different gradients and different final held-out performance. This is the basic empirical premise of Seed-Guided Optimization.
+### 2. Architecture and optimizer replication
+A small CNN replicated mean/minimum gains. Independently tuned AdamW and SGD+momentum both retained positive corrected-significant MLP gains, ruling out a simple AdamW-only explanation.
 
-### 2. Hardness and gradient novelty are not the same signal
+### 3. RNG compression and learned relevance
+Moderate candidate prefiltering can reduce expensive gradient evaluations, while aggressive 16→4 compression damages tail coverage. Training-only gradient information can learn useful RNG relevance in the tested generators; stale cross-generator fingerprints fail, while re-learning/soft weighting recovers performance.
 
-Loss-hard selection concentrates on immediately difficult environments. Gradient-novel selection retains a hard anchor while adding environments whose final-layer gradient signatures are less redundant.
+### 4. Relative gradient-redundancy control
+Absolute cosine targets can be infeasible across tasks. A within-step normalized target transfers better across the tested Digits/Synthetic conditions. This does not establish a universal operating point or task-level safety guarantee.
 
-On the structured Digits geometric-shift benchmark, gradient novelty outperformed transformation-parameter novelty even when the selected batches had nearly the same physical transformation-space diversity. The paired held-out mean advantage was about **+1.45 percentage points**.
+### 5. CIFAR-10 / ResNet-20, 40 paired replicates
+Under the unchanged primary protocol, gradient-novel minus loss-hard gives:
 
-### 3. Small-CNN architecture replication
+- held-out mean **+0.1206 pp**, raw `p=0.002672`, Holm(5) **`p=0.013361`**;
+- p10 **+0.1213 pp**, Holm `p=0.052939`;
+- minimum **+0.1875 pp**, Holm `p=0.088149`;
+- clean +0.0658 pp, Holm `p=0.639984`;
+- environment SD -0.0142 pp, Holm `p=0.639984`.
 
-Across 20 paired runs on the same structured geometric environment family, gradient-novel vs. loss-hard improved:
+The mean is supported under the stated correction. CIFAR tail robustness is **not confirmed**.
 
-- held-out mean by **+2.25 pp** (`Holm p=0.0171`);
-- minimum-environment accuracy by **+2.57 pp** (`Holm p=0.00573`).
+## Mechanism findings
 
-The p10 improvement was positive but did not survive the five-metric correction. Parameter novelty also helped the CNN, so the stronger MLP result that gradient novelty clearly dominates physical parameter novelty is not architecture-general.
+Direct audits rule out simple stories:
 
-### 4. Optimizer replication after independent tuning
+- gradient novelty is not simply a better estimator of the mean expected gradient than random sampling;
+- loss-hard can have larger immediate one-step loss decrease;
+- raw accumulated gradient effective-rank expansion does not separate helpful and harmful regimes.
 
-The initial SGD+momentum comparison was confounded by under-tuning. A separate loss-hard-only learning-rate sweep was therefore completed before the final selector comparison.
+A four-task trajectory audit found:
 
-Gradient-novel then improved held-out performance under both tested optimizers:
+| task | held-out mean delta | gradient effective-rank delta | representation effective-rank delta |
+|---|---:|---:|---:|
+| Digits geometric | +4.394 pp | +0.823 | +0.454 |
+| Synthetic | +0.089 pp | +6.231 | +0.113 |
+| Breast low | +0.040 pp | +3.362 | -0.165 |
+| Breast high | -0.034 pp | +7.148 | -0.361 |
 
-- AdamW: mean **+2.69 pp** (`Holm p=5.1e-5`), p10 **+2.94 pp** (`Holm p=0.00142`);
-- SGD+momentum: mean **+1.88 pp** (`Holm p=0.0362`), p10 **+3.02 pp** (`Holm p=0.00250`).
+Breast-high is the key counterexample: gradient rank expands the most, yet mean benefit is absent and representation rank falls.
 
-This is evidence against an AdamW-only explanation, not proof of optimizer universality.
+## Prospective representation-rank tests
 
-### 5. RNG prefiltering reduces expensive candidate evaluation only when the fingerprint is relevant
+Frozen rule:
 
-A seed integer, its finite RNG outputs, the stochastic environment generated from them, and the resulting model gradient are treated as distinct objects.
+> `sign(delta representation effective rank) -> sign(mean held-out benefit)`
 
-In the geometric benchmark, using RNG outputs that actually drive the environment permits moderate candidate compression before gradient evaluation. Adding unrelated RNG outputs degrades the distance metric. Compression also has a real failure boundary: reducing 16 candidates directly to 4 sharply damages lower-tail performance.
+Registered direction tests:
 
-A conservative tested point is **16 initial candidates → 12 cheaply prefiltered candidates → 4 backward environments**.
+| test | delta rep rank | observed mean benefit | match |
+|---|---:|---:|---|
+| Digits photometric | +0.0402 | +0.289 pp accuracy | yes |
+| Digits unstructured pixel | +0.0727 | +0.136 pp accuracy | yes |
+| Digits band occlusion | +0.2076 | +0.715 pp accuracy | yes |
+| Wine | +0.1365 | +0.336 pp accuracy | yes |
+| Iris | +0.0307 | +0.113 pp accuracy | yes |
+| Diabetes regression | **-0.0249** | **-0.001346 MSE benefit** | yes |
 
-### 6. RNG relevance can be learned without generator-coordinate labels
+This 6/6 directional record is promising but is not six independent datasets: three tests use Digits. The Diabetes negative prediction is the most falsification-oriented current result because gradient rank increased strongly while representation rank decreased and mean benefit was negative.
 
-A training-only ridge relevance model was fit from a 64-value RNG window to gradient-derived targets. In the original generator, learned top-coordinate filtering materially outperformed raw64 distance and approached the oracle relevant-coordinate representation.
-
-A second generator moved the relevant coordinates to non-contiguous positions. Reusing the old fingerprint failed, while re-learning relevance on the new generator recovered the strong coordinates. A soft relevance-weighted top-12 fingerprint improved over raw64 by approximately:
-
-- held-out mean **+1.37 pp**;
-- p10 **+3.02 pp**;
-- worst environment **+3.40 pp**;
-
-with the tested differences surviving Holm correction. The weighted representation was not significantly different from the oracle-seven representation on the five tested held-out metrics.
-
-Interpretation: useful RNG relevance can be discovered, but it is **generator/model-conditioned** rather than a universal property of seed values.
-
-### 7. Relative gradient-redundancy control transfers better than an absolute cosine target
-
-A controller that attempted to maintain an absolute selected-gradient cosine target of `0.15` transferred poorly from Digits to Synthetic because Synthetic's feasible gradient-cosine range was much higher; the controller saturated at the maximum novelty weight.
-
-The revised controller defines a target within the step-specific feasible range:
-
-```text
-c_target = c_strong_novelty + rho * (c_hardness - c_strong_novelty)
-```
-
-Using the same `rho=0.15` without held-out tuning:
-
-- on Digits, relative control improved held-out mean by **+4.63 pp**, p10 by **+3.58 pp**, and worst by **+3.92 pp** versus beta=0, all significant after Holm correction;
-- on Synthetic, the controller no longer saturated and was statistically indistinguishable from the tested fixed beta=1.5/3 operating points on the five held-out metrics.
-
-This supports normalization across a task's feasible gradient geometry. It does not establish a universal value of `rho`.
-
-### 8. Mechanism audit: the effect is not simple mean-gradient estimation or greedy one-step improvement
-
-Direct gradient audits produced important negative controls:
-
-- gradient-novel selection did **not** significantly beat random selection as an estimator of the mean expected gradient;
-- it aligned better with the tested tail/robust gradient direction;
-- loss-hard selection produced larger immediate one-step average loss reduction than gradient novelty.
-
-Therefore the long-run held-out benefit is not adequately explained as either superior unbiased mean-gradient estimation or maximal next-step loss reduction. The current interpretation is trajectory-oriented: environment selection changes which stochastic directions are repeatedly represented in the optimization path.
-
-## Suggestive / inconclusive result
-
-### CIFAR-10 / ResNet-20 primary validation
-
-The first 20 paired primary replicates completed successfully under a fixed protocol using 6,000 training images, 3,000 test images, ResNet-20, 64 training environment seeds, `K=8` candidates and `Q=4` backward environments.
-
-Gradient-novel minus loss-hard:
-
-- held-out mean **+0.1380 pp**, raw `p=.0224`, Holm `p=.1120`;
-- p10 **+0.1433 pp**, raw `p=.0324`, Holm `p=.1298`;
-- minimum +0.1900 pp, Holm `p=.6268`;
-- clean +0.0733 pp, Holm `p=.9432`;
-- environment SD essentially unchanged.
-
-This is **positive-direction but not confirmatory** after correction. The exact protocol is being extended to 40 paired replicates in PR #11 without changing selector, optimizer, data size, K/Q budget, or held-out environment definition.
+A secondary rule based on per-environment representation-rank SD failed on Wine and is retired.
 
 ## Negative and null results retained
 
-- Worst-only / very narrow tail objectives can over-focus on outlier environments.
-- Pure gradient diversity without hardness can hurt tail performance.
-- Full-network gradient signatures did not improve selection over the cheaper final-layer signature in the tested MLP.
-- A fixed selector learned on one task did not transfer universally.
-- Long raw RNG fingerprints containing irrelevant coordinates are worse than compact relevant fingerprints.
-- An old learned RNG fingerprint did not transfer after the generator's relevant coordinates were moved.
-- Directly predicting a compact gradient embedding from raw RNG was weaker than learning coordinate relevance in the tested setup.
-- Low-heterogeneity tasks can show little benefit from active seed selection.
-- Absolute gradient-cosine feedback can be infeasible across tasks.
-- An under-tuned optimizer can create a false selector failure; optimizer tuning must be separated from selector evaluation.
-- One-step mean-gradient quality and one-step loss reduction are insufficient mechanism explanations.
+- Worst-only training can damage average/clean performance.
+- Pure diversity without hardness can hurt.
+- Full-network signatures were slower without tested benefit over the head proxy.
+- Single-task selector/meta-policy weights did not transfer universally.
+- Absolute gradient-cosine targets fail cross-task.
+- Relative redundancy control does not guarantee benefit on a new task.
+- Gradient-rank expansion alone does not predict benefit.
+- Tail prediction from representation-rank SD failed.
+- CPU wall-clock optima are not GPU claims.
 
 ## Public claim boundary
 
-The current experiments justify saying:
+The evidence supports:
 
-> Gradient-aware stochastic-environment selection can improve held-out optimization/generalization relative to loss-only selection under some structured stochastic shifts in the tested settings. Training-only information can also identify useful RNG relevance for candidate prefiltering in the tested generators.
+> Gradient-aware stochastic-environment selection can improve held-out performance in several structured tested regimes; a small mean improvement also survives correction in the fixed CIFAR-10 / ResNet-20 study. Training-only representation effective-rank change is a promising predictor of the sign of **mean** benefit.
 
-They do **not** justify claiming a universally optimal seed family, semantic seed-number classes, a universal selector/controller, modern large-scale validation, or a GPU wall-clock advantage.
-
-For a compact matrix, see [`RESEARCH_STATUS.md`](RESEARCH_STATUS.md). For current gaps, see [`LIMITATIONS.md`](LIMITATIONS.md).
+It does not support a universal seed family, universal selector/controller, universal calibrated gate, confirmed CIFAR tail robustness, or GPU efficiency advantage.
