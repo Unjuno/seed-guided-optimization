@@ -1,67 +1,124 @@
 # Results summary
 
+The repository separates **supported**, **suggestive**, and **negative/null** findings. Headline comparisons are paired, use disjoint held-out environment seeds, and apply Holm correction when five outcome metrics are treated as one family.
+
 ## Supported findings
 
-### Seed/environment choice affects optimization trajectory
+### 1. Seed/environment choice changes optimization trajectory
 
-Even with the same underlying training dataset, stochastic environments produce different gradients and final held-out performance.
+With the underlying training dataset held fixed, stochastic environments induced by different seeds produce different gradients and different final held-out performance. This is the basic empirical premise of Seed-Guided Optimization.
 
-### Hardness and gradient novelty capture different information
+### 2. Hardness and gradient novelty are not the same signal
 
-Loss-hard selection concentrates on environments that are immediately difficult. Gradient-novel selection adds environments that produce non-redundant update directions. On the MLP geometric domain-shift benchmark, a hard + gradient-novel policy substantially outperformed both loss-hard and transformation-parameter novelty.
+Loss-hard selection concentrates on immediately difficult environments. Gradient-novel selection retains a hard anchor while adding environments whose final-layer gradient signatures are less redundant.
 
-### CNN replication
+On the structured Digits geometric-shift benchmark, gradient novelty outperformed transformation-parameter novelty even when the selected batches had nearly the same physical transformation-space diversity. The paired held-out mean advantage was about **+1.45 percentage points**.
 
-A small CNN was tested with the same geometric environment generator. Across 20 paired runs, gradient-novel vs. loss-hard improved held-out mean accuracy by +2.25 percentage points and minimum-environment accuracy by +2.57 points. Both survived five-metric Holm correction (`p=0.0171` and `p=0.00573`, respectively). The p10 difference was positive but did not survive correction.
+### 3. Small-CNN architecture replication
 
-Parameter novelty also improved CNN mean accuracy relative to loss-hard, so the MLP result that gradient novelty strongly dominates transformation-parameter novelty is not yet architecture-general.
+Across 20 paired runs on the same structured geometric environment family, gradient-novel vs. loss-hard improved:
 
-### Optimizer replication after tuning
+- held-out mean by **+2.25 pp** (`Holm p=0.0171`);
+- minimum-environment accuracy by **+2.57 pp** (`Holm p=0.00573`).
 
-An initial SGD+momentum comparison was confounded by an under-tuned learning rate. A separate loss-hard learning-rate sweep was therefore performed before the final selector comparison. With the tuned setting, gradient-novel improved held-out mean and p10 under both AdamW and SGD+momentum.
+The p10 improvement was positive but did not survive the five-metric correction. Parameter novelty also helped the CNN, so the stronger MLP result that gradient novelty clearly dominates physical parameter novelty is not architecture-general.
 
-- AdamW: mean +2.69 pp (`Holm p=5.1e-5`), p10 +2.94 pp (`Holm p=0.00142`).
-- SGD+momentum: mean +1.88 pp (`Holm p=0.0362`), p10 +3.02 pp (`Holm p=0.00250`).
+### 4. Optimizer replication after independent tuning
+
+The initial SGD+momentum comparison was confounded by under-tuning. A separate loss-hard-only learning-rate sweep was therefore completed before the final selector comparison.
+
+Gradient-novel then improved held-out performance under both tested optimizers:
+
+- AdamW: mean **+2.69 pp** (`Holm p=5.1e-5`), p10 **+2.94 pp** (`Holm p=0.00142`);
+- SGD+momentum: mean **+1.88 pp** (`Holm p=0.0362`), p10 **+3.02 pp** (`Holm p=0.00250`).
 
 This is evidence against an AdamW-only explanation, not proof of optimizer universality.
 
-### Model-dependent novelty matters
+### 5. RNG prefiltering reduces expensive candidate evaluation only when the fingerprint is relevant
 
-Environment-parameter distance is not sufficient in the MLP benchmark. Parameter-novel and gradient-novel selectors chose environments with similar transformation-space diversity, but gradient-novel achieved materially better held-out performance.
+A seed integer, its finite RNG outputs, the stochastic environment generated from them, and the resulting model gradient are treated as distinct objects.
 
-### RNG prefiltering can reduce expensive candidate evaluation
+In the geometric benchmark, using RNG outputs that actually drive the environment permits moderate candidate compression before gradient evaluation. Adding unrelated RNG outputs degrades the distance metric. Compression also has a real failure boundary: reducing 16 candidates directly to 4 sharply damages lower-tail performance.
 
-A cheap prefilter based on RNG coordinates that actually drive the environment generator reduced candidate gradient evaluations without degrading the main metrics at moderate compression. The current conservative point is 16 candidates → 12 prefiltered candidates → 4 backward environments.
+A conservative tested point is **16 initial candidates → 12 cheaply prefiltered candidates → 4 backward environments**.
 
-### Relevant RNG coordinates can be estimated from training gradients
+### 6. RNG relevance can be learned without generator-coordinate labels
 
-A proof-of-concept removed direct knowledge of the seven RNG coordinates that drive the geometric environment. A separate calibration pool of 128 environment seeds and training-only examples was used to fit a ridge model from 64 raw RNG outputs to a 16-dimensional PCA representation of final-layer gradient signatures. Feature relevance was then defined from the fitted coefficient norms.
+A training-only ridge relevance model was fit from a 64-value RNG window to gradient-derived targets. In the original generator, learned top-coordinate filtering materially outperformed raw64 distance and approached the oracle relevant-coordinate representation.
 
-The learned top-seven coordinates recovered five of the seven truly relevant coordinates in its first five ranks. At a 16 → 8 candidate prefilter:
+A second generator moved the relevant coordinates to non-contiguous positions. Reusing the old fingerprint failed, while re-learning relevance on the new generator recovered the strong coordinates. A soft relevance-weighted top-12 fingerprint improved over raw64 by approximately:
 
-- learned-top7 vs. raw64: held-out mean **+1.85 pp** (`Holm p=0.00282`), p10 **+2.11 pp** (`Holm p=0.00747`);
-- learned-top7 vs. oracle-seven: no tested metric differed significantly after Holm correction;
-- gradient candidate evaluations were reduced from 1280 to 640 per run and measured training time fell by about 35% in this CPU benchmark.
+- held-out mean **+1.37 pp**;
+- p10 **+3.02 pp**;
+- worst environment **+3.40 pp**;
 
-This supports automatic relevance discovery in the tested generator. It does **not** remove the compression trade-off: both learned-top7 and oracle-seven at 16 → 8 had weaker lower-tail metrics than evaluating all 16 gradient candidates. The fingerprint result and the choice of compression ratio should therefore be treated as separate questions.
+with the tested differences surviving Holm correction. The weighted representation was not significantly different from the oracle-seven representation on the five tested held-out metrics.
 
-### Compression has a real failure boundary
+Interpretation: useful RNG relevance can be discovered, but it is **generator/model-conditioned** rather than a universal property of seed values.
 
-Reducing the candidate set to 4 removed too much gradient coverage: p10 and minimum held-out accuracy dropped sharply. Candidate reduction is therefore an optimization problem, not a monotonic speedup.
+### 7. Relative gradient-redundancy control transfers better than an absolute cosine target
 
-## Negative results retained
+A controller that attempted to maintain an absolute selected-gradient cosine target of `0.15` transferred poorly from Digits to Synthetic because Synthetic's feasible gradient-cosine range was much higher; the controller saturated at the maximum novelty weight.
 
-- Worst-only / very narrow CVaR can over-focus on outlier environments.
+The revised controller defines a target within the step-specific feasible range:
+
+```text
+c_target = c_strong_novelty + rho * (c_hardness - c_strong_novelty)
+```
+
+Using the same `rho=0.15` without held-out tuning:
+
+- on Digits, relative control improved held-out mean by **+4.63 pp**, p10 by **+3.58 pp**, and worst by **+3.92 pp** versus beta=0, all significant after Holm correction;
+- on Synthetic, the controller no longer saturated and was statistically indistinguishable from the tested fixed beta=1.5/3 operating points on the five held-out metrics.
+
+This supports normalization across a task's feasible gradient geometry. It does not establish a universal value of `rho`.
+
+### 8. Mechanism audit: the effect is not simple mean-gradient estimation or greedy one-step improvement
+
+Direct gradient audits produced important negative controls:
+
+- gradient-novel selection did **not** significantly beat random selection as an estimator of the mean expected gradient;
+- it aligned better with the tested tail/robust gradient direction;
+- loss-hard selection produced larger immediate one-step average loss reduction than gradient novelty.
+
+Therefore the long-run held-out benefit is not adequately explained as either superior unbiased mean-gradient estimation or maximal next-step loss reduction. The current interpretation is trajectory-oriented: environment selection changes which stochastic directions are repeatedly represented in the optimization path.
+
+## Suggestive / inconclusive result
+
+### CIFAR-10 / ResNet-20 primary validation
+
+The first 20 paired primary replicates completed successfully under a fixed protocol using 6,000 training images, 3,000 test images, ResNet-20, 64 training environment seeds, `K=8` candidates and `Q=4` backward environments.
+
+Gradient-novel minus loss-hard:
+
+- held-out mean **+0.1380 pp**, raw `p=.0224`, Holm `p=.1120`;
+- p10 **+0.1433 pp**, raw `p=.0324`, Holm `p=.1298`;
+- minimum +0.1900 pp, Holm `p=.6268`;
+- clean +0.0733 pp, Holm `p=.9432`;
+- environment SD essentially unchanged.
+
+This is **positive-direction but not confirmatory** after correction. The exact protocol is being extended to 40 paired replicates in PR #11 without changing selector, optimizer, data size, K/Q budget, or held-out environment definition.
+
+## Negative and null results retained
+
+- Worst-only / very narrow tail objectives can over-focus on outlier environments.
 - Pure gradient diversity without hardness can hurt tail performance.
-- Full-gradient signatures do not automatically improve selection over final-layer signatures.
-- A fixed selector learned on one task is not universally transferable.
-- Long raw RNG fingerprints containing irrelevant coordinates are worse than short relevant fingerprints.
-- Directly predicting a compact gradient embedding from the 64-value RNG fingerprint was weaker than using learned coordinate relevance in the first automatic-fingerprint experiment.
-- Low-heterogeneity tasks may show almost no benefit from active seed selection.
-- An under-tuned optimizer can create a false negative; optimizer hyperparameters must be tuned independently of the selector comparison.
+- Full-network gradient signatures did not improve selection over the cheaper final-layer signature in the tested MLP.
+- A fixed selector learned on one task did not transfer universally.
+- Long raw RNG fingerprints containing irrelevant coordinates are worse than compact relevant fingerprints.
+- An old learned RNG fingerprint did not transfer after the generator's relevant coordinates were moved.
+- Directly predicting a compact gradient embedding from raw RNG was weaker than learning coordinate relevance in the tested setup.
+- Low-heterogeneity tasks can show little benefit from active seed selection.
+- Absolute gradient-cosine feedback can be infeasible across tasks.
+- An under-tuned optimizer can create a false selector failure; optimizer tuning must be separated from selector evaluation.
+- One-step mean-gradient quality and one-step loss reduction are insufficient mechanism explanations.
 
 ## Public claim boundary
 
-The present experiments justify saying that gradient-aware environment-seed selection **can** improve optimization/generalization in tested stochastic-shift settings and that the effect has replicated across one MLP, one CNN, AdamW, and tuned SGD+momentum. They also provide a first proof-of-concept that training-only gradient information can identify useful coordinates in an otherwise noisy RNG fingerprint.
+The current experiments justify saying:
 
-They do not justify saying that a universally optimal seed family exists, that seed values themselves have semantic classes, that automatic RNG discovery transfers across generators, or that the method is validated on modern large-scale neural networks.
+> Gradient-aware stochastic-environment selection can improve held-out optimization/generalization relative to loss-only selection under some structured stochastic shifts in the tested settings. Training-only information can also identify useful RNG relevance for candidate prefiltering in the tested generators.
+
+They do **not** justify claiming a universally optimal seed family, semantic seed-number classes, a universal selector/controller, modern large-scale validation, or a GPU wall-clock advantage.
+
+For a compact matrix, see [`RESEARCH_STATUS.md`](RESEARCH_STATUS.md). For current gaps, see [`LIMITATIONS.md`](LIMITATIONS.md).
