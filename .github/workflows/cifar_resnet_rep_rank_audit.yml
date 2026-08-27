@@ -1,0 +1,96 @@
+name: CIFAR-10 ResNet representation-rank falsification
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'experiments/cifar_resnet_rep_rank_audit.py'
+      - 'experiments/summarize_cifar_rep_rank_audit.py'
+      - '.github/workflows/cifar_resnet_rep_rank_audit.yml'
+  workflow_dispatch:
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      max-parallel: 10
+      matrix:
+        include:
+          - {rep: 40, start: 40, end: 41}
+          - {rep: 41, start: 41, end: 42}
+          - {rep: 42, start: 42, end: 43}
+          - {rep: 43, start: 43, end: 44}
+          - {rep: 44, start: 44, end: 45}
+          - {rep: 45, start: 45, end: 46}
+          - {rep: 46, start: 46, end: 47}
+          - {rep: 47, start: 47, end: 48}
+          - {rep: 48, start: 48, end: 49}
+          - {rep: 49, start: 49, end: 50}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Install CPU dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt torchvision==0.25.0
+      - name: Download CIFAR-10 with bounded fallback
+        shell: bash
+        run: |
+          set -e
+          mkdir -p .cache/cifar10
+          if [ ! -f .cache/cifar10/cifar-10-batches-py/data_batch_1 ]; then
+            curl -L --fail --connect-timeout 10 --max-time 120 \
+              https://www.cs.toronto.edu/~kriz/cifar-10-python.tar.gz \
+              -o /tmp/cifar.tar.gz || \
+            curl -L --fail --connect-timeout 10 --max-time 120 \
+              'https://www.dropbox.com/scl/fi/6mhiq4rtfszqrosasp8a9/cifar-10-batches-py.tar.gz?rlkey=g6v114un4je233j52tu5tdsbe&st=gxo2e50q&dl=1' \
+              -o /tmp/cifar.tar.gz
+            tar -xzf /tmp/cifar.tar.gz -C .cache/cifar10
+          fi
+      - name: Run preregistered CIFAR representation-rank replicate
+        run: |
+          mkdir -p artifacts
+          python experiments/cifar_resnet_rep_rank_audit.py \
+            --start ${{ matrix.start }} \
+            --end ${{ matrix.end }} \
+            --output artifacts/cifar_resnet_rep_rank_reps${{ matrix.rep }}.csv
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: cifar-resnet-rep-rank-rep${{ matrix.rep }}
+          path: artifacts/*.csv
+          if-no-files-found: warn
+
+  aggregate:
+    needs: audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Install summary dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install numpy pandas scipy
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: cifar-resnet-rep-rank-rep*
+          path: downloaded
+          merge-multiple: true
+      - name: Apply frozen decision rule
+        run: |
+          python experiments/summarize_cifar_rep_rank_audit.py \
+            --input-dir downloaded \
+            --output-dir aggregate
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cifar-resnet-rep-rank-aggregate10
+          path: aggregate/*.csv
+          if-no-files-found: error
