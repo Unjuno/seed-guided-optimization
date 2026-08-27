@@ -21,7 +21,7 @@ A finding is labeled **supported** only within its stated comparison, task, and 
 
 | Topic | Evidence | Current conclusion |
 |---|---|---|
-| Representation effective-rank sign | six registered tests | sign(delta representation effective rank) matched sign(mean held-out benefit) in all six tests, including a negative Diabetes regression test; three tests share Digits |
+| Representation effective-rank sign | seven registered tests across five datasets | sign(delta representation effective rank) matched sign(mean held-out benefit) in all seven tests; the new FashionMNIST/Tiny Transformer test changed dataset, generator, and architecture and passed with delta rank +0.0542 and mean benefit +0.736 pp |
 | CIFAR p10/minimum direction | 40 paired primary runs | positive direction, but Holm p=0.05294 / 0.08815; tail robustness remains unconfirmed |
 
 ## Important negative or null results
@@ -43,7 +43,8 @@ A finding is labeled **supported** only within its stated comparison, task, and 
 
 ## Current open work
 
-- Prospectively falsify the representation-rank sign rule on genuinely new data/generator/architecture conditions.
+- Complete the separately preregistered CIFAR-10 / ResNet-20 representation-rank trajectory audit.
+- Prospectively falsify the representation-rank sign rule on a larger or otherwise materially different architecture after the Tiny Transformer PASS.
 - Develop a new training-only tail-safety diagnostic without retuning the failed rule.
 - Run GPU-vectorized wall-clock benchmarks at matched update/candidate budgets.
 - Test naturally stochastic simulators or non-handcrafted environment processes.
@@ -52,6 +53,6 @@ A finding is labeled **supported** only within its stated comparison, task, and 
 
 Safe public wording:
 
-> Gradient-aware selection of stochastic training environments can improve held-out optimization/generalization under some structured stochastic shifts in the tested settings. A fixed-protocol CIFAR-10 / ResNet-20 study supports a small mean improvement, and training-only representation effective-rank change is a promising prospective predictor of the sign of mean benefit.
+> Gradient-aware selection of stochastic training environments can improve held-out optimization/generalization under some structured stochastic shifts in the tested settings. A fixed-protocol CIFAR-10 / ResNet-20 study supports a small mean improvement, and training-only representation effective-rank change is a promising prospective predictor of the sign of mean benefit. The directional rule has now passed a small FashionMNIST Transformer architecture-shift test as well as the earlier MLP-based tests.
 
-Do not claim a universally good seed family, universal selector/controller, universal representation-rank gate, confirmed CIFAR tail robustness, or GPU efficiency advantage.
+Do not claim a universally good seed family, universal selector/controller, universal representation-rank gate, general Transformer validation, confirmed CIFAR tail robustness, or GPU efficiency advantage.
