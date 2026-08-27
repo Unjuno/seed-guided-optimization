@@ -12,17 +12,22 @@ on:
 jobs:
   audit:
     runs-on: ubuntu-latest
-    timeout-minutes: 180
+    timeout-minutes: 90
     strategy:
       fail-fast: false
+      max-parallel: 10
       matrix:
         include:
-          - shard: reps40_44
-            start: 40
-            end: 45
-          - shard: reps45_49
-            start: 45
-            end: 50
+          - {rep: 40, start: 40, end: 41}
+          - {rep: 41, start: 41, end: 42}
+          - {rep: 42, start: 42, end: 43}
+          - {rep: 43, start: 43, end: 44}
+          - {rep: 44, start: 44, end: 45}
+          - {rep: 45, start: 45, end: 46}
+          - {rep: 46, start: 46, end: 47}
+          - {rep: 47, start: 47, end: 48}
+          - {rep: 48, start: 48, end: 49}
+          - {rep: 49, start: 49, end: 50}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -47,17 +52,17 @@ jobs:
               -o /tmp/cifar.tar.gz
             tar -xzf /tmp/cifar.tar.gz -C .cache/cifar10
           fi
-      - name: Run preregistered CIFAR representation-rank audit
+      - name: Run preregistered CIFAR representation-rank replicate
         run: |
           mkdir -p artifacts
           python experiments/cifar_resnet_rep_rank_audit.py \
             --start ${{ matrix.start }} \
             --end ${{ matrix.end }} \
-            --output artifacts/cifar_resnet_rep_rank_${{ matrix.shard }}.csv
+            --output artifacts/cifar_resnet_rep_rank_reps${{ matrix.rep }}.csv
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: cifar-resnet-rep-rank-${{ matrix.shard }}
+          name: cifar-resnet-rep-rank-rep${{ matrix.rep }}
           path: artifacts/*.csv
           if-no-files-found: warn
 
@@ -76,7 +81,7 @@ jobs:
           pip install numpy pandas scipy
       - uses: actions/download-artifact@v4
         with:
-          pattern: cifar-resnet-rep-rank-*
+          pattern: cifar-resnet-rep-rank-rep*
           path: downloaded
           merge-multiple: true
       - name: Apply frozen decision rule
