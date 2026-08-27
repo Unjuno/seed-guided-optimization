@@ -20,7 +20,7 @@ Paired summary files may contain raw p-values and Holm-adjusted p-values. A raw 
 
 ## 1. Core selector evidence
 
-- `public_key_findings.csv` — compact historical headline table.
+- `public_key_findings.csv` — compact current headline index with a `status` field.
 - `geometric_paired.csv` — main structured geometric selector comparisons.
 - `gradient_vs_parameter_paired.csv` — gradient novelty vs physical transformation-parameter novelty.
 - `cnn_replication_paired20.csv` — 20-pair small-CNN replication.
