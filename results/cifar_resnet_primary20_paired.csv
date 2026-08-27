@@ -1,0 +1,6 @@
+comparison,metric,n,delta,p,p_holm_5
+gradnov4-loss4,mean_test,20,0.001380,0.022391,0.111957
+gradnov4-loss4,sd_test,20,0.000004,0.985144,0.985144
+gradnov4-loss4,p10_test,20,0.001433,0.032438,0.129751
+gradnov4-loss4,min_test,20,0.001900,0.208935,0.626805
+gradnov4-loss4,clean_test,20,0.000733,0.471616,0.943232
