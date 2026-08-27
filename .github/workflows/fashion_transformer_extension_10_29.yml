@@ -1,0 +1,102 @@
+name: FashionMNIST Transformer extension reps 10-29
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/fashion_transformer_extension_10_29.yml'
+  workflow_dispatch:
+
+jobs:
+  extension:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - shard: reps10_14
+            start: 10
+            end: 15
+          - shard: reps15_19
+            start: 15
+            end: 20
+          - shard: reps20_24
+            start: 20
+            end: 25
+          - shard: reps25_29
+            start: 25
+            end: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Install CPU dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt torchvision==0.25.0
+      - name: Pre-download FashionMNIST
+        run: |
+          python - <<'PY'
+          from torchvision.datasets import FashionMNIST
+          root='.cache/fashionmnist'
+          FashionMNIST(root, train=True, download=True)
+          FashionMNIST(root, train=False, download=True)
+          print('FashionMNIST ready')
+          PY
+      - name: Run fixed-protocol extension
+        run: |
+          mkdir -p artifacts
+          python experiments/fashion_transformer_rep_rank_audit.py \
+            --start ${{ matrix.start }} \
+            --end ${{ matrix.end }} \
+            --output artifacts/fashion_transformer_rep_rank_${{ matrix.shard }}.csv
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: fashion-transformer-extension-${{ matrix.shard }}
+          path: artifacts/*.csv
+          if-no-files-found: warn
+
+  aggregate:
+    needs: extension
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install numpy pandas scipy
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: fashion-transformer-extension-*
+          path: downloaded
+          merge-multiple: true
+      - name: Extension-only frozen assessment (reps 10-29)
+        run: |
+          python experiments/summarize_prospective_rep_rank.py \
+            --input-dir downloaded \
+            --pattern 'fashion_transformer_rep_rank_reps*.csv' \
+            --output-dir aggregate_extension \
+            --prefix fashion_transformer_rep_rank_extension \
+            --start 10 --end 30 --tolerance 0.01
+      - name: Combined 30-pair precision estimate
+        run: |
+          mkdir -p combined_input
+          cp results/fashion_transformer_rep_rank_all10.csv combined_input/fashion_transformer_rep_rank_reps0_9.csv
+          cp downloaded/fashion_transformer_rep_rank_reps*.csv combined_input/
+          python experiments/summarize_prospective_rep_rank.py \
+            --input-dir combined_input \
+            --pattern 'fashion_transformer_rep_rank_reps*.csv' \
+            --output-dir aggregate_combined \
+            --prefix fashion_transformer_rep_rank_combined \
+            --start 0 --end 30 --tolerance 0.01
+      - uses: actions/upload-artifact@v4
+        with:
+          name: fashion-transformer-extension-aggregate
+          path: |
+            aggregate_extension/*.csv
+            aggregate_combined/*.csv
+          if-no-files-found: error
