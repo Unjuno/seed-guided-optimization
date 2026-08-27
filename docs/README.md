@@ -13,7 +13,8 @@ This directory separates claim status, protocol, evidence, mechanism, and open q
 
 - [`GRADIENT_DIRECTION_AUDIT.md`](GRADIENT_DIRECTION_AUDIT.md) — mean-gradient, tail-gradient, and one-step loss controls.
 - [`TRAJECTORY_MECHANISM.md`](TRAJECTORY_MECHANISM.md) — cross-task trajectory diagnostics and the representation-rank candidate mechanism.
-- [`PROSPECTIVE_REPRESENTATION_RANK.md`](PROSPECTIVE_REPRESENTATION_RANK.md) — six registered direction tests and retirement of the failed tail rule.
+- [`PROSPECTIVE_REPRESENTATION_RANK.md`](PROSPECTIVE_REPRESENTATION_RANK.md) — seven registered direction tests across five datasets and retirement of the failed tail rule.
+- [`FASHION_TRANSFORMER_REP_RANK.md`](FASHION_TRANSFORMER_REP_RANK.md) — preregistered FashionMNIST/Tiny Transformer architecture-shift test; directional decision PASS.
 - [`ADAPTIVE_BETA.md`](ADAPTIVE_BETA.md) — feedback control of gradient-novelty strength.
 - [`RELATIVE_REDUNDANCY_CONTROL.md`](RELATIVE_REDUNDANCY_CONTROL.md) — task-normalized redundancy control.
 

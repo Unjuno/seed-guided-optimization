@@ -4,7 +4,7 @@
 
 Random seeds are usually treated as reproducibility controls. This project studies a narrower optimization question: when a seed indexes a stochastic training environment, it changes the gradient trajectory. Seed-Guided Optimization (SGO) tests whether a fixed update budget can be allocated more effectively by retaining hard environments while reducing redundancy among model-conditioned gradient directions.
 
-> **Status:** experimental research code. The strongest replicated results are on structured small-scale benchmarks. A fixed-protocol CIFAR-10 / ResNet-20 validation now has 40 paired replicates with a corrected-significant held-out mean improvement, while tail metrics remain unconfirmed. Negative and null results are retained.
+> **Status:** experimental research code. The strongest replicated results are on structured small-scale benchmarks. A fixed-protocol CIFAR-10 / ResNet-20 validation has 40 paired replicates with a corrected-significant held-out mean improvement, while tail metrics remain unconfirmed. A frozen training-only representation-rank direction rule has also passed seven prospective tests across five datasets, including a small FashionMNIST Transformer test. Negative and null results are retained.
 
 ## Research claim
 
@@ -34,7 +34,7 @@ Headline comparisons use paired replicates and disjoint held-out environment see
 | Relative redundancy control | absolute cosine targets fail cross-task; normalized relative targets transfer better in tested tasks | supported with scope limits |
 | CIFAR-10 / ResNet-20, 40 pairs | mean **+0.1206 pp**, Holm(5) `p=0.01336`; p10/min positive but not corrected-significant | supported for mean only |
 | Trajectory mechanism | raw gradient-rank expansion does not predict benefit; representation effective-rank change is a better candidate | exploratory mechanism evidence |
-| Prospective representation-rank rule | 6/6 registered direction matches, including a negative Diabetes regression result | prospectively supported, not universal proof |
+| Prospective representation-rank rule | **7/7** registered direction matches across five datasets, including negative Diabetes and FashionMNIST/Tiny Transformer architecture-shift tests | prospectively supported, not universal proof |
 
 See [`docs/RESULTS.md`](docs/RESULTS.md), [`docs/RESEARCH_STATUS.md`](docs/RESEARCH_STATUS.md), and [`docs/LIMITATIONS.md`](docs/LIMITATIONS.md).
 
@@ -86,9 +86,11 @@ Across four discovery tasks, representation effective-rank change tracked the si
 
 > **sign(delta hidden-representation effective rank) predicts sign(mean held-out benefit).**
 
-The rule then matched six prospective direction tests, including a negative prediction on Diabetes regression. Three of the six tests share Digits, so this is not six independent datasets and is not yet a calibrated universal gate.
+The rule has now matched seven prospective direction tests across five datasets. The record includes a negative Diabetes regression prediction and a positive FashionMNIST/Tiny Transformer test that changed dataset, stochastic generator, and representation architecture. Three tests still share Digits, and the Transformer is deliberately small, so this is not a calibrated universal gate.
 
-See [`docs/TRAJECTORY_MECHANISM.md`](docs/TRAJECTORY_MECHANISM.md) and [`docs/PROSPECTIVE_REPRESENTATION_RANK.md`](docs/PROSPECTIVE_REPRESENTATION_RANK.md).
+In the FashionMNIST test, mean representation-rank difference was **+0.0542** and mean held-out accuracy benefit was **+0.736 pp** across 10 paired runs, yielding a preregistered **PASS**.
+
+See [`docs/TRAJECTORY_MECHANISM.md`](docs/TRAJECTORY_MECHANISM.md), [`docs/PROSPECTIVE_REPRESENTATION_RANK.md`](docs/PROSPECTIVE_REPRESENTATION_RANK.md), and [`docs/FASHION_TRANSFORMER_REP_RANK.md`](docs/FASHION_TRANSFORMER_REP_RANK.md).
 
 ## Negative results are part of the repository
 
@@ -104,6 +106,7 @@ The evidence does **not** support these stronger claims:
 - the representation-rank rule is already a universal/calibrated gate;
 - the attempted per-environment representation-rank SD tail rule works;
 - CIFAR p10/worst robustness is confirmed;
+- one small Transformer establishes general Transformer or large-model validity;
 - CPU wall-clock results determine GPU-optimal settings.
 
 ## Repository map
@@ -122,6 +125,7 @@ The evidence does **not** support these stronger claims:
 │   ├── LIMITATIONS.md
 │   ├── TRAJECTORY_MECHANISM.md
 │   ├── PROSPECTIVE_REPRESENTATION_RANK.md
+│   ├── FASHION_TRANSFORMER_REP_RANK.md
 │   └── ...
 ├── experiments/
 │   ├── README.md
@@ -134,7 +138,7 @@ The evidence does **not** support these stronger claims:
 
 ## Reproduction
 
-Tested public CPU stack includes PyTorch 2.10, NumPy 2.3.x, pandas 2.2.x, SciPy 1.17, and scikit-learn 1.8.
+Tested public CPU stack includes PyTorch 2.10, NumPy 2.3.x, pandas 2.2.x, SciPy 1.17, and scikit-learn 1.8. CIFAR/FashionMNIST workflows additionally pin torchvision 0.25.0.
 
 ```bash
 python -m venv .venv
@@ -152,10 +156,11 @@ Then follow [`experiments/README.md`](experiments/README.md). Accuracy-like CSV 
 
 ## Current roadmap
 
-1. Prospectively falsify the representation-rank sign rule on genuinely new dataset/generator/architecture conditions.
-2. Find a new training-only tail-safety diagnostic; the previous rep-rank-SD rule is retired.
-3. Run GPU-vectorized wall-clock comparisons at matched update and candidate-evaluation budgets.
-4. Extend beyond handcrafted stochastic corruption generators and small/medium architectures.
+1. Complete the independently preregistered CIFAR-10 / ResNet-20 representation-rank falsification audit.
+2. Continue prospective rank-rule falsification on a larger/different architecture beyond the Tiny Transformer.
+3. Find a new training-only tail-safety diagnostic; the previous rep-rank-SD rule is retired.
+4. Run GPU-vectorized wall-clock comparisons at matched update and candidate-evaluation budgets.
+5. Extend beyond handcrafted stochastic corruption generators.
 
 ## Citation and license
 
