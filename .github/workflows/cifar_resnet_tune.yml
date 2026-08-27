@@ -1,0 +1,46 @@
+name: CIFAR-10 ResNet tuning
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'experiments/cifar_resnet_tune.py'
+      - '.github/workflows/cifar_resnet_tune.yml'
+  workflow_dispatch:
+
+jobs:
+  tune:
+    strategy:
+      fail-fast: false
+      matrix:
+        lr: ['0.001','0.003','0.01']
+        epochs: [6,10]
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt torchvision==0.25.0
+      - name: Download CIFAR-10
+        shell: bash
+        run: |
+          mkdir -p .cache/cifar10
+          curl -L --fail --connect-timeout 10 --max-time 90 --retry 2 https://www.cs.toronto.edu/~kriz/cifar-10-python.tar.gz -o /tmp/cifar.tar.gz || \
+          curl -L --fail --connect-timeout 10 --max-time 90 --retry 2 'https://www.dropbox.com/scl/fi/6mhiq4rtfszqrosasp8a9/cifar-10-batches-py.tar.gz?rlkey=g6v114un4je233j52tu5tdsbe&st=gxo2e50q&dl=1' -o /tmp/cifar.tar.gz
+          tar -xzf /tmp/cifar.tar.gz -C .cache/cifar10
+      - name: Tune loss-hard baseline
+        run: |
+          mkdir -p artifacts
+          python experiments/cifar_resnet_tune.py \
+            --lr ${{ matrix.lr }} --epochs ${{ matrix.epochs }} \
+            --output artifacts/tune_lr${{ matrix.lr }}_e${{ matrix.epochs }}.csv
+      - uses: actions/upload-artifact@v4
+        with:
+          name: tune-lr${{ matrix.lr }}-e${{ matrix.epochs }}
+          path: artifacts/*.csv
