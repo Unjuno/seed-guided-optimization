@@ -17,7 +17,7 @@ jobs:
       fail-fast: false
       max-parallel: 20
       matrix:
-        rep: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]
+        rep: [20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -55,7 +55,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: cifar-primary-${{ matrix.rep }}
+          name: cifar-primary-ext-${{ matrix.rep }}
           path: artifacts/*.csv
           if-no-files-found: warn
 
@@ -70,10 +70,10 @@ jobs:
       - run: pip install pandas scipy numpy
       - uses: actions/download-artifact@v4
         with:
-          pattern: cifar-primary-*
+          pattern: cifar-primary-ext-*
           path: artifacts
           merge-multiple: true
-      - name: Aggregate paired statistics
+      - name: Aggregate extension paired statistics
         run: |
           python - <<'PY'
           import glob
@@ -85,7 +85,7 @@ jobs:
           if not files:
               raise SystemExit('no replicate CSVs')
           df=pd.concat([pd.read_csv(f) for f in files],ignore_index=True).sort_values(['rep','method'])
-          df.to_csv('artifacts/cifar_resnet_primary_all.csv',index=False)
+          df.to_csv('artifacts/cifar_resnet_primary_extension_all.csv',index=False)
           A=df[df.method=='gradnov4'].set_index('rep')
           B=df[df.method=='loss4'].set_index('rep')
           common=A.index.intersection(B.index)
@@ -99,14 +99,14 @@ jobs:
           for rank,idx in enumerate(order):
               running=max(running,(len(ps)-rank)*ps[idx]); adj[idx]=min(1.0,running)
           for r,padj in zip(rows,adj): r['p_holm_5']=float(padj)
-          pd.DataFrame(rows).to_csv('artifacts/cifar_resnet_primary_paired.csv',index=False)
+          pd.DataFrame(rows).to_csv('artifacts/cifar_resnet_primary_extension_paired.csv',index=False)
           print(pd.DataFrame(rows).to_string(index=False))
           print('\nMETHOD MEANS')
           print(df.groupby('method')[metrics+['train_seconds','base_mean','base_clean']].mean().to_string())
           PY
       - uses: actions/upload-artifact@v4
         with:
-          name: cifar-resnet-primary-combined
+          name: cifar-resnet-primary-extension-combined
           path: |
-            artifacts/cifar_resnet_primary_all.csv
-            artifacts/cifar_resnet_primary_paired.csv
+            artifacts/cifar_resnet_primary_extension_all.csv
+            artifacts/cifar_resnet_primary_extension_paired.csv
