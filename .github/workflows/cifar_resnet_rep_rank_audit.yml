@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - 'experiments/cifar_resnet_rep_rank_audit.py'
+      - 'experiments/summarize_cifar_rep_rank_audit.py'
       - '.github/workflows/cifar_resnet_rep_rank_audit.yml'
   workflow_dispatch:
 
@@ -45,3 +46,32 @@ jobs:
           name: cifar-resnet-rep-rank-${{ matrix.shard }}
           path: artifacts/*.csv
           if-no-files-found: warn
+
+  aggregate:
+    needs: audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Install summary dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install numpy pandas scipy
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: cifar-resnet-rep-rank-*
+          path: downloaded
+          merge-multiple: true
+      - name: Apply frozen decision rule
+        run: |
+          python experiments/summarize_cifar_rep_rank_audit.py \
+            --input-dir downloaded \
+            --output-dir aggregate
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cifar-resnet-rep-rank-aggregate10
+          path: aggregate/*.csv
+          if-no-files-found: error
