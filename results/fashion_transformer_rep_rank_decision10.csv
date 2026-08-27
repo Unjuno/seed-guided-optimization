@@ -1,0 +1,2 @@
+n,mean_delta_rep_eff_rank,rank_practical_tolerance,registered_prediction,mean_delta_mean_test,observed_mean_direction,decision,p_rank_unadjusted,p_mean_unadjusted,rank_delta_se,mean_delta_se
+10,0.054150186899304134,0.01,positive,0.007362500000000017,positive,PASS,0.04707667984674713,0.03603302312825365,0.02355384345464792,0.0029903074519867356
