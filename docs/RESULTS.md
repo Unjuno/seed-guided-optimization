@@ -62,8 +62,24 @@ Registered direction tests:
 | Wine | +0.1365 | +0.336 pp accuracy | yes |
 | Iris | +0.0307 | +0.113 pp accuracy | yes |
 | Diabetes regression | **-0.0249** | **-0.001346 MSE benefit** | yes |
+| FashionMNIST / Tiny Transformer | **+0.0542** | **+0.736 pp accuracy** | yes |
 
-This 6/6 directional record is promising but is not six independent datasets: three tests use Digits. The Diabetes negative prediction is the most falsification-oriented current result because gradient rank increased strongly while representation rank decreased and mean benefit was negative.
+The directional record is now **7/7 across five datasets**. It is not seven independent datasets because three tests use Digits. The Diabetes negative prediction remains the strongest negative falsification case. FashionMNIST supplies a new positive falsification test that changes dataset, stochastic generator, and representation architecture simultaneously.
+
+### FashionMNIST / Tiny Transformer
+
+This test was preregistered in Issue #20 before the CIFAR/ResNet prospective result was available. Ten paired runs used a 2-layer, 48-dimensional CLS patch Transformer, 3,000 training examples, 1,000 test examples, 64 training environments, and 24 disjoint held-out environments.
+
+Gradient-novel minus loss-hard:
+
+- representation effective rank: **+0.05415**, SE 0.02355, raw paired `p=0.04708`;
+- held-out mean accuracy: **+0.7363 pp**, SE 0.2990 pp, raw paired `p=0.03603`.
+
+The frozen practical tolerance was 0.01, so the rank diagnostic registered a positive aggregate prediction. The observed mean effect was positive. **Decision: PASS.**
+
+All 10 paired held-out mean differences were positive. Secondary p10/minimum/clean results are retained descriptively, but no tail-safety rule was registered and no tail claim is promoted.
+
+See [`FASHION_TRANSFORMER_REP_RANK.md`](FASHION_TRANSFORMER_REP_RANK.md).
 
 A secondary rule based on per-environment representation-rank SD failed on Wine and is retired.
 
@@ -83,6 +99,6 @@ A secondary rule based on per-environment representation-rank SD failed on Wine 
 
 The evidence supports:
 
-> Gradient-aware stochastic-environment selection can improve held-out performance in several structured tested regimes; a small mean improvement also survives correction in the fixed CIFAR-10 / ResNet-20 study. Training-only representation effective-rank change is a promising predictor of the sign of **mean** benefit.
+> Gradient-aware stochastic-environment selection can improve held-out performance in several structured tested regimes; a small mean improvement also survives correction in the fixed CIFAR-10 / ResNet-20 study. Training-only representation effective-rank change is a promising predictor of the sign of **mean** benefit, now including a prospective FashionMNIST/Tiny Transformer architecture-shift PASS.
 
-It does not support a universal seed family, universal selector/controller, universal calibrated gate, confirmed CIFAR tail robustness, or GPU efficiency advantage.
+It does not support a universal seed family, universal selector/controller, universal calibrated gate, general Transformer/large-model validation, confirmed CIFAR tail robustness, or GPU efficiency advantage.
