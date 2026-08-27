@@ -1,4 +1,4 @@
-name: CIFAR-10 ResNet primary
+name: CIFAR-10 ResNet primary extension
 
 on:
   pull_request:
