@@ -1,0 +1,47 @@
+name: CIFAR-10 ResNet representation-rank falsification
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'experiments/cifar_resnet_rep_rank_audit.py'
+      - '.github/workflows/cifar_resnet_rep_rank_audit.yml'
+  workflow_dispatch:
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - shard: reps40_44
+            start: 40
+            end: 45
+          - shard: reps45_49
+            start: 45
+            end: 50
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      - name: Run preregistered CIFAR representation-rank audit
+        run: |
+          mkdir -p artifacts
+          python experiments/cifar_resnet_rep_rank_audit.py \
+            --start ${{ matrix.start }} \
+            --end ${{ matrix.end }} \
+            --output artifacts/cifar_resnet_rep_rank_${{ matrix.shard }}.csv
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: cifar-resnet-rep-rank-${{ matrix.shard }}
+          path: artifacts/*.csv
+          if-no-files-found: warn
