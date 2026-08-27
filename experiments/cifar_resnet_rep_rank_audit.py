@@ -31,6 +31,7 @@ from cifar_resnet_finetune_pilot import (
 )
 
 AUDIT_ENV_INDICES = [1, 9, 17, 25, 33, 41, 49, 57]
+RANK_TOLERANCE = 0.01
 
 
 def effective_rank_features(h: np.ndarray) -> float:
@@ -82,6 +83,16 @@ def paired_summary(df: pd.DataFrame) -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
+def frozen_direction(delta_rank: float) -> str:
+    if abs(delta_rank) < RANK_TOLERANCE:
+        return "UNCERTAIN"
+    return "POSITIVE" if delta_rank > 0 else "NONPOSITIVE"
+
+
+def clone_state(model):
+    return {k: v.detach().clone() for k, v in model.state_dict().items()}
+
+
 def run(a):
     configure()
     xtr, ytr, xte, yte = load_cifar(
@@ -89,7 +100,6 @@ def run(a):
     )
     train_env = [20_000 + i for i in range(64)]
     test_env = [40_000 + i for i in range(a.test_envs)]
-    test_cache = cache_test(xte, test_env)
 
     rows = []
     started = time.time()
@@ -124,6 +134,7 @@ def run(a):
         pre_model.load_state_dict(state)
         pre_rank = representation_audit(pre_model, xtr, train_env, probe_idx)
 
+        sealed = {}
         for method in ("loss4", "gradnov4"):
             seed_everything(base)
             model = CIFARResNet20()
@@ -151,8 +162,6 @@ def run(a):
                 per[chosen].mean().backward()
                 opt.step()
 
-            # Registered predictor is measured using training data only,
-            # before final held-out evaluation is called.
             rep_rank = representation_audit(model, xtr, train_env, probe_idx)
             training_only = {
                 "rep": rep,
@@ -160,13 +169,40 @@ def run(a):
                 "pre_rep_eff_rank": pre_rank,
                 "rep_eff_rank": rep_rank,
                 "rep_eff_rank_from_pretrain": rep_rank - pre_rank,
+                "train_seconds": time.time() - st,
+            }
+            sealed[method] = {
+                "training_only": training_only,
+                "state": clone_state(model),
             }
             print("TRAINING_ONLY " + json.dumps(training_only), flush=True)
 
+        # Seal and emit the preregistered predictor before any held-out metric is
+        # computed for either method in this replicate.
+        delta_rank = (
+            sealed["gradnov4"]["training_only"]["rep_eff_rank"]
+            - sealed["loss4"]["training_only"]["rep_eff_rank"]
+        )
+        prediction = {
+            "rep": rep,
+            "delta_rep_eff_rank": delta_rank,
+            "rank_tolerance": RANK_TOLERANCE,
+            "predicted_mean_direction": frozen_direction(delta_rank),
+        }
+        print("SEALED_PREDICTION " + json.dumps(prediction), flush=True)
+
+        # Held-out construction and evaluation occur only after both training-only
+        # model states and the predictor have been sealed.
+        test_cache = cache_test(xte, test_env)
+        for method in ("loss4", "gradnov4"):
+            model = CIFARResNet20()
+            model.load_state_dict(sealed[method]["state"])
             heldout = evaluate_cached(model, test_cache, yte, xte)
+            training_only = sealed[method]["training_only"]
             row = {
                 **training_only,
-                "train_seconds": time.time() - st,
+                "predicted_mean_direction": prediction["predicted_mean_direction"],
+                "rep_delta_rep_eff_rank": delta_rank,
                 "pretrain_epochs": a.pretrain_epochs,
                 "finetune_epochs": a.finetune_epochs,
                 "n_train": len(ytr),
