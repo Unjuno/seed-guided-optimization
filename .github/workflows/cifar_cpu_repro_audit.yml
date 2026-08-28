@@ -57,18 +57,26 @@ jobs:
           print('OPENBLAS_NUM_THREADS', os.environ.get('OPENBLAS_NUM_THREADS'))
           print('torch_threads_before_entry', torch.get_num_threads())
           PY
-      - name: Download CIFAR-10 with bounded fallback
+      - name: Download verified CIFAR-10 archive
         shell: bash
         run: |
-          set -e
+          set -euo pipefail
           mkdir -p .cache/cifar10
           if [ ! -f .cache/cifar10/cifar-10-batches-py/data_batch_1 ]; then
-            curl -L --fail --connect-timeout 10 --max-time 120 \
-              https://www.cs.toronto.edu/~kriz/cifar-10-python.tar.gz \
-              -o /tmp/cifar.tar.gz || \
-            curl -L --fail --connect-timeout 10 --max-time 120 \
-              'https://www.dropbox.com/scl/fi/6mhiq4rtfszqrosasp8a9/cifar-10-batches-py.tar.gz?rlkey=g6v114un4je233j52tu5tdsbe&st=gxo2e50q&dl=1' \
-              -o /tmp/cifar.tar.gz
+            expected='c58f30108f718f92721af3b95e74349a'
+            download_and_verify() {
+              local url="$1"
+              local max_time="$2"
+              rm -f /tmp/cifar.tar.gz
+              curl -L --fail --retry 4 --retry-all-errors --connect-timeout 15 --max-time "$max_time" \
+                "$url" -o /tmp/cifar.tar.gz || return 1
+              echo "$expected  /tmp/cifar.tar.gz" | md5sum -c -
+            }
+            if ! download_and_verify \
+              'https://dataset.bj.bcebos.com/cifar/cifar-10-python.tar.gz' 600; then
+              download_and_verify \
+                'https://www.cs.toronto.edu/~kriz/cifar-10-python.tar.gz' 3600
+            fi
             tar -xzf /tmp/cifar.tar.gz -C .cache/cifar10
           fi
       - name: Run frozen single-thread replicate
