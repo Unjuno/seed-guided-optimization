@@ -1,0 +1,117 @@
+name: CIFAR ResNet hosted-CPU reproducibility audit
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'experiments/cifar_cpu_repro_entry.py'
+      - 'experiments/summarize_cifar_cpu_repro.py'
+      - '.github/workflows/cifar_cpu_repro_audit.yml'
+  workflow_dispatch:
+
+jobs:
+  reproduce:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - rep: 45
+            repeat: A
+          - rep: 45
+            repeat: B
+          - rep: 46
+            repeat: A
+          - rep: 46
+            repeat: B
+    env:
+      OMP_NUM_THREADS: '1'
+      MKL_NUM_THREADS: '1'
+      OPENBLAS_NUM_THREADS: '1'
+      NUMEXPR_NUM_THREADS: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Install pinned runtime
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt torchvision==0.25.0
+      - name: Record runtime metadata
+        run: |
+          mkdir -p artifacts
+          lscpu > artifacts/runtime_rep${{ matrix.rep }}_${{ matrix.repeat }}.txt
+          python - <<'PY' >> artifacts/runtime_rep${{ matrix.rep }}_${{ matrix.repeat }}.txt
+          import os, platform
+          import numpy, scipy, torch, torchvision
+          print('python', platform.python_version())
+          print('numpy', numpy.__version__)
+          print('scipy', scipy.__version__)
+          print('torch', torch.__version__)
+          print('torchvision', torchvision.__version__)
+          print('OMP_NUM_THREADS', os.environ.get('OMP_NUM_THREADS'))
+          print('MKL_NUM_THREADS', os.environ.get('MKL_NUM_THREADS'))
+          print('OPENBLAS_NUM_THREADS', os.environ.get('OPENBLAS_NUM_THREADS'))
+          print('torch_threads_before_entry', torch.get_num_threads())
+          PY
+      - name: Download verified CIFAR-10 archive
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .cache/cifar10
+          if [ ! -f .cache/cifar10/cifar-10-batches-py/data_batch_1 ]; then
+            expected='c58f30108f718f92721af3b95e74349a'
+            download_and_verify() {
+              local url="$1"
+              local max_time="$2"
+              rm -f /tmp/cifar.tar.gz
+              curl -L --fail --retry 4 --retry-all-errors --connect-timeout 15 --max-time "$max_time" \
+                "$url" -o /tmp/cifar.tar.gz || return 1
+              echo "$expected  /tmp/cifar.tar.gz" | md5sum -c -
+            }
+            if ! download_and_verify \
+              'https://dataset.bj.bcebos.com/cifar/cifar-10-python.tar.gz' 600; then
+              download_and_verify \
+                'https://www.cs.toronto.edu/~kriz/cifar-10-python.tar.gz' 3600
+            fi
+            tar -xzf /tmp/cifar.tar.gz -C .cache/cifar10
+          fi
+      - name: Run frozen single-thread replicate
+        run: |
+          python experiments/cifar_cpu_repro_entry.py \
+            --rep ${{ matrix.rep }} \
+            --output artifacts/cifar_cpu_repro_rep${{ matrix.rep }}_${{ matrix.repeat }}.csv
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: cifar-cpu-repro-rep${{ matrix.rep }}-${{ matrix.repeat }}
+          path: artifacts/*
+          if-no-files-found: error
+
+  aggregate:
+    needs: reproduce
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install numpy pandas
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: cifar-cpu-repro-*
+          path: downloaded
+          merge-multiple: true
+      - name: Apply preregistered reproducibility decision
+        run: |
+          python experiments/summarize_cifar_cpu_repro.py \
+            --input-dir downloaded \
+            --output-dir aggregate
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cifar-cpu-repro-aggregate
+          path: aggregate/*.csv
+          if-no-files-found: error
