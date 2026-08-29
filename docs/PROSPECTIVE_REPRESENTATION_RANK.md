@@ -2,13 +2,15 @@
 
 ## Purpose
 
-A four-task discovery analysis suggested that gradient novelty helps when the additional optimization-direction diversity is converted into a richer hidden representation. The candidate training-only indicator was frozen as:
+A four-task discovery analysis suggested that gradient novelty helps when additional optimization-direction diversity is converted into a richer hidden representation. The candidate training-only indicator was frozen as:
 
-> **sign(delta representation effective rank) predicts the sign of held-out mean benefit.**
+> **sign(delta representation effective rank) predicts the sign of condition-average held-out mean benefit.**
 
-The rule was then tested prospectively: train models, compute and seal the diagnostic without evaluating the final environment pool, register the prediction, and only then evaluate untouched held-out seeds.
+The rule is tested prospectively: train models, compute and seal the diagnostic without evaluating the final environment pool, register the prediction, and only then evaluate untouched held-out seeds.
 
-## Prospective tests
+The wording is now explicitly **condition-average**. FashionMNIST and CIFAR diagnostics show that the same threshold is not a reliable per-replicate gate.
+
+## Registered prospective tests
 
 | test | task | delta rep rank | delta grad rank | pre-registered direction | observed mean benefit | match |
 |---|---|---:|---:|---|---:|---|
@@ -19,37 +21,97 @@ The rule was then tested prospectively: train models, compute and seal the diagn
 | Iris | real classification | +0.0307 | +1.1776 | positive, very small | +0.113 pp accuracy | yes |
 | Diabetes | real regression | **-0.0249** | **+3.6764** | **negative** | **-0.001346 MSE benefit** | yes |
 | FashionMNIST / Tiny Transformer | image classification | **+0.0542** | not measured | **positive** | **+0.736 pp accuracy** | yes |
+| CIFAR-10 / ResNet-20 | image classification | **+0.03205** | not primary | **positive** | **+0.1703 pp accuracy** | yes |
 
 For regression, benefit is `MSE(loss-hard) - MSE(gradnov)`, so a negative value means gradient novelty produced higher MSE.
 
-The directional record is now **7/7**. This should not be interpreted as seven independent Bernoulli trials because three tests share the Digits dataset. The seven tests span five datasets. FashionMNIST is the first prospective test here to move the rule to a Transformer-style representation rather than the small MLP family used for the original discovery analysis.
+The registered condition-level directional record is now **8/8 across six datasets**. Three tests share the Digits dataset, so this should not be interpreted as eight independent datasets or eight independent Bernoulli trials.
 
-The strongest negative falsification-oriented result remains Diabetes: gradient effective rank increased strongly while representation effective rank decreased, and the pre-registered prediction correctly switched to a negative held-out benefit. FashionMNIST supplies a complementary positive architecture-shift test: mean representation rank increased by about +0.0542 and mean held-out accuracy improved by about +0.736 pp across 10 paired runs.
+The strongest negative falsification case remains Diabetes: gradient effective rank increased strongly while representation effective rank decreased, and the frozen prediction correctly switched to negative held-out benefit.
 
-Among the first five classification prospective tests before FashionMNIST, task/generator-level delta representation effective rank correlated with held-out mean accuracy gain (Spearman rho about 0.90; Pearson r about 0.896; n=5). Those correlations were descriptive and should not be retroactively recalibrated using the new Fashion result. The primary prospective evidence is the frozen directional decision, not a fitted magnitude model.
+FashionMNIST and CIFAR add materially different representation architectures beyond the original small-MLP discovery family.
 
-## FashionMNIST / Tiny Transformer detail
+## FashionMNIST / Tiny Transformer: initial test and independent replication
 
-Issue #20 registered the protocol before the CIFAR/ResNet prospective result was known. The experiment changed dataset, stochastic generator, and architecture simultaneously. Across 10 paired replicates:
+Issue #20 registered the initial protocol before the CIFAR/ResNet prospective result was known. Across the original 10 paired replicates:
 
-- mean delta representation effective rank: **+0.05415** (SE 0.02355; raw paired p=0.04708);
-- mean held-out accuracy benefit: **+0.7363 pp** (SE 0.2990 pp; raw paired p=0.03603);
+- mean delta representation effective rank: **+0.05415** (SE 0.02355; raw paired `p=0.04708`);
+- mean held-out accuracy benefit: **+0.7363 pp** (SE 0.2990 pp; raw paired `p=0.03603`);
 - frozen rank tolerance: 0.01;
 - registered aggregate prediction: positive;
 - observed aggregate mean direction: positive;
 - decision: **PASS**.
 
-All 10 paired held-out mean differences were positive. Tail metrics are secondary; no tail rule was registered for this test.
+Issue #26 then preregistered an exact-protocol independent extension using reps 10-29. Across those 20 new pairs:
 
-See [`FASHION_TRANSFORMER_REP_RANK.md`](FASHION_TRANSFORMER_REP_RANK.md) for protocol and result details.
+- mean delta representation effective rank: **+0.07853** (SE 0.02349; descriptive `p=0.003414`);
+- mean held-out accuracy benefit: **+0.4377 pp** (SE 0.1918 pp; descriptive `p=0.03420`);
+- frozen aggregate prediction: positive;
+- observed aggregate mean direction: positive;
+- decision: **REPLICATES**.
+
+After the extension-only decision was frozen, reps 0-29 were combined for precision only:
+
+- rank delta **+0.07041**;
+- held-out mean benefit **+0.5372 pp**.
+
+Per-replicate diagnostics do not justify a gate: among the 20 extension pairs, using the same `+/-0.01` rank tolerance descriptively gave 13 matches, 5 mismatches, and 2 uncertain cases.
+
+See [`FASHION_TRANSFORMER_REP_RANK.md`](FASHION_TRANSFORMER_REP_RANK.md) and [`FASHION_TRANSFORMER_EXTENSION.md`](FASHION_TRANSFORMER_EXTENSION.md).
+
+## CIFAR-10 / ResNet-20 prospective falsification
+
+Issue #12 fixed the independent CIFAR audit before the held-out result:
+
+- replicate IDs 40-49, n=10;
+- exact separated CIFAR primary protocol;
+- final 64-D pooled hidden feature;
+- fixed 256-example training-only probe;
+- fixed training-environment audit indices;
+- both methods trained and both training-only ranks emitted before held-out construction/evaluation;
+- `|mean delta rank| < 0.01` -> uncertain;
+- positive delta -> predict positive mean benefit;
+- nonpositive delta -> predict nonpositive mean benefit.
+
+Observed training-only mean delta representation effective rank was **+0.0320505**, which sealed a **positive** prediction. Only after that seal was the held-out pool evaluated.
+
+Observed held-out mean accuracy delta was **+0.001703125 = +0.1703 pp**. **Decision: PASS.**
+
+Descriptive uncertainty:
+
+- rank delta SE 0.02016, raw paired `p=0.1464`;
+- held-out mean SE 0.06775 pp, raw paired `p=0.03310`;
+- approximate 95% interval for rank delta: about `-0.0136` to `+0.0777`;
+- approximate 95% interval for mean benefit: about `+0.0171` to `+0.3236 pp`.
+
+The rank difference itself is noisy and not individually significant at conventional levels. The prospective evidence is therefore the **predeclared directional decision**, not a claim that rank magnitude is precisely estimated.
+
+Secondary p10/minimum/clean outcomes do not establish a tail rule. At the individual-replicate level, the same `0.01` tolerance gave 6 matches, 3 mismatches, and 1 uncertain case.
+
+See [`CIFAR_RESNET_REP_RANK.md`](CIFAR_RESNET_REP_RANK.md).
+
+## What the current record supports
+
+The narrow supported predictor statement is:
+
+> In the tested conditions, the sign of the **condition-average** training-only representation effective-rank difference has prospectively tracked the sign of mean held-out novelty benefit.
+
+It does not yet support:
+
+- a universal magnitude mapping;
+- a calibrated decision probability;
+- a reliable per-run gate;
+- a causal interpretation of effective rank itself;
+- a tail-safety rule;
+- large-model/general-Transformer validity.
 
 ## Tail rule: failed
 
 A secondary post-hoc hypothesis proposed that increasing the across-environment SD of representation effective rank would predict tail/dispersion risk. It partially matched one Digits generator but failed on the independently tested Wine dataset. The tail rule is therefore retired rather than retuned.
 
-The current supported mechanism candidate is deliberately narrow:
+The current mechanism candidate is deliberately narrow:
 
-> Gradient-space expansion is not itself sufficient. A positive conversion into representation effective rank is a candidate predictor of **mean** held-out benefit.
+> Gradient-space expansion is not itself sufficient. Benefit appears when useful optimization-direction coverage is converted into reusable representation structure, for which representation effective-rank direction is a training-only proxy.
 
 No reliable training-only predictor of p10/worst-case benefit has yet been established.
 
@@ -65,4 +127,4 @@ For the prospective sequence:
 6. held-out results are reported regardless of direction;
 7. failed secondary rules are retired rather than retuned on the same evidence.
 
-Prediction/outcome provenance for the original six tests is preserved in Issue #12. FashionMNIST preregistration and outcome provenance are preserved in Issue #20 and PR #21.
+Prediction/outcome provenance is preserved in Issues #12, #20, and #26 and the corresponding result PRs.

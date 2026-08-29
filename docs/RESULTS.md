@@ -11,12 +11,12 @@ Gradient novelty improves held-out performance over loss-hard selection, and in 
 A small CNN replicated mean/minimum gains. Independently tuned AdamW and SGD+momentum both retained positive corrected-significant MLP gains, ruling out a simple AdamW-only explanation.
 
 ### 3. RNG compression and learned relevance
-Moderate candidate prefiltering can reduce expensive gradient evaluations, while aggressive 16→4 compression damages tail coverage. Training-only gradient information can learn useful RNG relevance in the tested generators; stale cross-generator fingerprints fail, while re-learning/soft weighting recovers performance.
+Moderate candidate prefiltering can reduce expensive gradient evaluations, while aggressive 16->4 compression damages tail coverage. Training-only gradient information can learn useful RNG relevance in the tested generators; stale cross-generator fingerprints fail, while re-learning/soft weighting recovers performance.
 
 ### 4. Relative gradient-redundancy control
 Absolute cosine targets can be infeasible across tasks. A within-step normalized target transfers better across the tested Digits/Synthetic conditions. This does not establish a universal operating point or task-level safety guarantee.
 
-### 5. CIFAR-10 / ResNet-20, 40 paired replicates
+### 5. CIFAR-10 / ResNet-20 primary, 40 paired replicates
 Under the unchanged primary protocol, gradient-novel minus loss-hard gives:
 
 - held-out mean **+0.1206 pp**, raw `p=0.002672`, Holm(5) **`p=0.013361`**;
@@ -46,13 +46,25 @@ A four-task trajectory audit found:
 
 Breast-high is the key counterexample: gradient rank expands the most, yet mean benefit is absent and representation rank falls.
 
+The current working theory is therefore **finite-budget coverage plus representation conversion**, not generic diversity maximization:
+
+```text
+hard + non-redundant gradient directions
+    -> broader coverage of unresolved task-relevant directions
+    -> trajectory change
+    -> reusable representation change when conversion succeeds
+    -> held-out mean benefit.
+```
+
+See [`THEORETICAL_FRAMEWORK.md`](THEORETICAL_FRAMEWORK.md).
+
 ## Prospective representation-rank tests
 
 Frozen rule:
 
 > `sign(delta representation effective rank) -> sign(mean held-out benefit)`
 
-Registered direction tests:
+Registered condition-level direction tests:
 
 | test | delta rep rank | observed mean benefit | match |
 |---|---:|---:|---|
@@ -63,25 +75,67 @@ Registered direction tests:
 | Iris | +0.0307 | +0.113 pp accuracy | yes |
 | Diabetes regression | **-0.0249** | **-0.001346 MSE benefit** | yes |
 | FashionMNIST / Tiny Transformer | **+0.0542** | **+0.736 pp accuracy** | yes |
+| CIFAR-10 / ResNet-20 | **+0.03205** | **+0.1703 pp accuracy** | yes |
 
-The directional record is now **7/7 across five datasets**. It is not seven independent datasets because three tests use Digits. The Diabetes negative prediction remains the strongest negative falsification case. FashionMNIST supplies a new positive falsification test that changes dataset, stochastic generator, and representation architecture simultaneously.
+The registered directional record is now **8/8 across six datasets**. It is not eight independent datasets because three tests use Digits. The primary evidence is the frozen condition-level direction decision, not a fitted magnitude model or per-run classifier.
 
 ### FashionMNIST / Tiny Transformer
 
-This test was preregistered in Issue #20 before the CIFAR/ResNet prospective result was available. Ten paired runs used a 2-layer, 48-dimensional CLS patch Transformer, 3,000 training examples, 1,000 test examples, 64 training environments, and 24 disjoint held-out environments.
-
-Gradient-novel minus loss-hard:
+Initial prospective test, reps 0-9:
 
 - representation effective rank: **+0.05415**, SE 0.02355, raw paired `p=0.04708`;
-- held-out mean accuracy: **+0.7363 pp**, SE 0.2990 pp, raw paired `p=0.03603`.
+- held-out mean accuracy: **+0.7363 pp**, SE 0.2990 pp, raw paired `p=0.03603`;
+- decision: **PASS**.
 
-The frozen practical tolerance was 0.01, so the rank diagnostic registered a positive aggregate prediction. The observed mean effect was positive. **Decision: PASS.**
+Independent preregistered extension, reps 10-29:
 
-All 10 paired held-out mean differences were positive. Secondary p10/minimum/clean results are retained descriptively, but no tail-safety rule was registered and no tail claim is promoted.
+- representation effective rank: **+0.07853**, SE 0.02349, descriptive `p=0.003414`;
+- held-out mean accuracy: **+0.4377 pp**, SE 0.1918 pp, descriptive `p=0.03420`;
+- decision: **REPLICATES** under the frozen condition-average direction rule.
 
-See [`FASHION_TRANSFORMER_REP_RANK.md`](FASHION_TRANSFORMER_REP_RANK.md).
+After the extension decision was frozen, all 30 pairs were combined for precision only:
 
-A secondary rule based on per-environment representation-rank SD failed on Wine and is retired.
+- delta representation rank: **+0.07041**, descriptive `p=0.000354`;
+- held-out mean accuracy: **+0.5372 pp**, descriptive `p=0.002367`.
+
+Per-run behavior is not a reliable gate: the independent extension contained 13 sign matches, 5 mismatches, and 2 uncertain cases under the same `0.01` rank tolerance.
+
+See [`FASHION_TRANSFORMER_EXTENSION.md`](FASHION_TRANSFORMER_EXTENSION.md).
+
+### CIFAR-10 / ResNet-20 prospective representation-rank audit
+
+A separate frozen 10-pair audit used reps 40-49 and a fixed 256-example training-only representation probe. Before held-out evaluation, mean delta representation effective rank was **+0.03205**, above the preregistered `0.01` tolerance, sealing a positive prediction.
+
+Held-out mean gradient-novel minus loss-hard was **+0.1703 pp**. **Decision: PASS.**
+
+Descriptive statistics:
+
+- rank delta SE 0.02016, `p=0.1464`;
+- held-out mean SE 0.06775 pp, `p=0.03310`;
+- p10 +0.2747 pp, descriptive `p=0.0966`;
+- minimum +0.1600 pp, descriptive `p=0.3467`;
+- clean +0.1800 pp, descriptive `p=0.1006`.
+
+No tail claim is promoted. At the replicate level there were 6 direction matches, 3 mismatches, and 1 uncertain case; again, the supported use is condition-average.
+
+See [`CIFAR_RESNET_REP_RANK.md`](CIFAR_RESNET_REP_RANK.md).
+
+A secondary rule based on per-environment representation-rank SD failed on Wine and remains retired.
+
+## Hosted-CPU execution reproducibility
+
+A preregistered execution audit reran CIFAR reps 45 and 46 twice under single-thread OMP/MKL/OpenBLAS/PyTorch controls. The frozen result was:
+
+- bitwise equality over all scientific fields: **false**;
+- max representation-rank drift: **0.427255**;
+- max accuracy drift: **0.014667**;
+- aggregate rank direction stable: positive in both repeats;
+- aggregate held-out mean direction stable: positive in both repeats;
+- decision: **DRIFT PERSISTS**.
+
+Rep45 was bitwise identical across AMD EPYC 7763 and AMD EPYC 9V74. Rep46 drifted between AMD EPYC 7763 and Intel Xeon 6973P-C under the same software/thread controls. This makes hardware-dependent numerical paths a strong candidate, but the audit does not isolate a sole cause.
+
+See [`CIFAR_CPU_REPRO_AUDIT.md`](CIFAR_CPU_REPRO_AUDIT.md).
 
 ## Negative and null results retained
 
@@ -93,12 +147,14 @@ A secondary rule based on per-environment representation-rank SD failed on Wine 
 - Relative redundancy control does not guarantee benefit on a new task.
 - Gradient-rank expansion alone does not predict benefit.
 - Tail prediction from representation-rank SD failed.
+- The representation-rank rule is not a calibrated per-run gate.
+- Hosted-CPU bitwise reproducibility across heterogeneous hardware is not established.
 - CPU wall-clock optima are not GPU claims.
 
 ## Public claim boundary
 
 The evidence supports:
 
-> Gradient-aware stochastic-environment selection can improve held-out performance in several structured tested regimes; a small mean improvement also survives correction in the fixed CIFAR-10 / ResNet-20 study. Training-only representation effective-rank change is a promising predictor of the sign of **mean** benefit, now including a prospective FashionMNIST/Tiny Transformer architecture-shift PASS.
+> Gradient-aware stochastic-environment selection can improve held-out performance in several structured tested regimes; a small mean improvement also survives correction in the fixed CIFAR-10 / ResNet-20 study. Across eight registered prospective conditions on six datasets, training-only representation effective-rank direction has matched the sign of **condition-average mean benefit**, with an independent FashionMNIST/Tiny Transformer replication and a CIFAR/ResNet PASS. The current mechanism hypothesis is finite-budget coverage of unresolved task-relevant gradient directions followed by conversion into reusable representation structure.
 
-It does not support a universal seed family, universal selector/controller, universal calibrated gate, general Transformer/large-model validation, confirmed CIFAR tail robustness, or GPU efficiency advantage.
+It does not support a universal seed family, universal selector/controller, causal representation-rank law, universal calibrated/per-run gate, confirmed CIFAR tail robustness, general large-model validity, bitwise cross-hardware reproducibility, or GPU efficiency advantage.
