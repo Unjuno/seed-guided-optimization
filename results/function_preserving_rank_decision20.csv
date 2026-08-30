@@ -1,0 +1,2 @@
+n_reps,manipulation_pass,n_intervention_rows,prediction_mismatch_rows,metric_mismatch_rows,max_abs_logit_diff,function_identity_pass,rank_up_min,rank_down_max,sign_count_min,logit_tolerance,decision
+20,True,80,0,0,0.0,True,0.5,-0.5,18,1e-05,COORDINATE-DEPENDENCE PASS

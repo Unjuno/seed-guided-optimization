@@ -1,0 +1,3 @@
+method,n,mean_delta_rank_spread,spread_positive_count,mean_delta_rank_concentrate,concentrate_negative_count,mean_delta_std_rank_spread,mean_delta_std_rank_concentrate,manipulation_pass_method
+loss_hard,20,2.3308121794214225,20,-5.8329742339291055,20,0.0,0.0,True
+gradnov,20,2.080818943453232,20,-6.128847275401559,20,0.0,0.0,True
