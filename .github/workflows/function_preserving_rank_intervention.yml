@@ -1,0 +1,87 @@
+name: Function-preserving representation-rank intervention
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'experiments/function_preserving_rank_intervention.py'
+      - 'experiments/summarize_function_preserving_rank.py'
+      - '.github/workflows/function_preserving_rank_intervention.yml'
+  workflow_dispatch:
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - shard: reps200_204
+            start: 200
+            end: 205
+          - shard: reps205_209
+            start: 205
+            end: 210
+          - shard: reps210_214
+            start: 210
+            end: 215
+          - shard: reps215_219
+            start: 215
+            end: 220
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Install pinned dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      - name: Train and seal training-only interventions
+        run: |
+          mkdir -p artifacts/${{ matrix.shard }}
+          python experiments/function_preserving_rank_intervention.py train \
+            --start ${{ matrix.start }} \
+            --end ${{ matrix.end }} \
+            --output-dir artifacts/${{ matrix.shard }}
+      - name: Evaluate fresh held-out environments
+        run: |
+          python experiments/function_preserving_rank_intervention.py evaluate \
+            --start ${{ matrix.start }} \
+            --end ${{ matrix.end }} \
+            --output-dir artifacts/${{ matrix.shard }}
+      - name: Remove model states before upload
+        run: rm -rf artifacts/${{ matrix.shard }}/states
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: function-preserving-rank-${{ matrix.shard }}
+          path: artifacts/${{ matrix.shard }}/*.csv
+          if-no-files-found: warn
+
+  aggregate:
+    needs: audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install summarizer dependencies
+        run: pip install numpy pandas
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: function-preserving-rank-reps*
+          path: downloaded
+      - name: Apply preregistered intervention decision
+        run: |
+          python experiments/summarize_function_preserving_rank.py \
+            --input-dir downloaded \
+            --output-dir aggregate
+      - uses: actions/upload-artifact@v4
+        with:
+          name: function-preserving-rank-aggregate20
+          path: aggregate/*.csv
+          if-no-files-found: error
