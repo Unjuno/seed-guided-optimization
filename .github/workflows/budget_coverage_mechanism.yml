@@ -1,0 +1,100 @@
+name: Budget coverage mechanism falsification
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'experiments/budget_coverage_mechanism.py'
+      - 'experiments/summarize_budget_coverage.py'
+      - '.github/workflows/budget_coverage_mechanism.yml'
+  workflow_dispatch:
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      OMP_NUM_THREADS: '1'
+      MKL_NUM_THREADS: '1'
+      OPENBLAS_NUM_THREADS: '1'
+      NUMEXPR_NUM_THREADS: '1'
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - shard: reps100_104
+            start: 100
+            end: 105
+          - shard: reps105_109
+            start: 105
+            end: 110
+          - shard: reps110_114
+            start: 110
+            end: 115
+          - shard: reps115_119
+            start: 115
+            end: 120
+          - shard: reps120_124
+            start: 120
+            end: 125
+          - shard: reps125_129
+            start: 125
+            end: 130
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Install pinned dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      - name: Run training-only budget audit
+        run: |
+          mkdir -p artifacts
+          python experiments/budget_coverage_mechanism.py train \
+            --start ${{ matrix.start }} \
+            --end ${{ matrix.end }} \
+            --output-dir artifacts
+      - name: Evaluate fresh held-out environments
+        run: |
+          python experiments/budget_coverage_mechanism.py evaluate \
+            --start ${{ matrix.start }} \
+            --end ${{ matrix.end }} \
+            --output-dir artifacts
+      - name: Remove model states before upload
+        if: always()
+        run: rm -rf artifacts/states
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: budget-coverage-${{ matrix.shard }}
+          path: artifacts/*.csv
+          if-no-files-found: warn
+
+  aggregate:
+    needs: audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install summarizer dependencies
+        run: pip install numpy==2.3.5 pandas==2.2.3 scipy==1.17.0
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: budget-coverage-*
+          path: downloaded
+          merge-multiple: true
+      - name: Apply preregistered mechanism decision
+        run: |
+          python experiments/summarize_budget_coverage.py \
+            --input-dir downloaded \
+            --output-dir aggregate
+      - uses: actions/upload-artifact@v4
+        with:
+          name: budget-coverage-aggregate30
+          path: aggregate/*.csv
+          if-no-files-found: error
