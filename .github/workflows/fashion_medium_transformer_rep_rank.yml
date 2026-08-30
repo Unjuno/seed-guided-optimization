@@ -1,0 +1,84 @@
+name: FashionMNIST Medium Transformer rank scaling test
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'experiments/fashion_medium_transformer_rep_rank_audit.py'
+      - '.github/workflows/fashion_medium_transformer_rep_rank.yml'
+  workflow_dispatch:
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - shard: reps10_14
+            start: 10
+            end: 15
+          - shard: reps15_19
+            start: 15
+            end: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Install CPU dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt torchvision==0.25.0
+      - name: Pre-download FashionMNIST
+        run: |
+          python - <<'PY'
+          from torchvision.datasets import FashionMNIST
+          root='.cache/fashionmnist'
+          FashionMNIST(root, train=True, download=True)
+          FashionMNIST(root, train=False, download=True)
+          print('FashionMNIST ready')
+          PY
+      - name: Run preregistered Medium Transformer rank audit
+        run: |
+          mkdir -p artifacts
+          python experiments/fashion_medium_transformer_rep_rank_audit.py \
+            --start ${{ matrix.start }} \
+            --end ${{ matrix.end }} \
+            --output artifacts/fashion_medium_transformer_rep_rank_${{ matrix.shard }}.csv
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: fashion-medium-transformer-rep-rank-${{ matrix.shard }}
+          path: artifacts/*.csv
+          if-no-files-found: warn
+
+  aggregate:
+    needs: audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install numpy pandas scipy
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: fashion-medium-transformer-rep-rank-*
+          path: downloaded
+          merge-multiple: true
+      - name: Apply frozen decision rule
+        run: |
+          python experiments/summarize_prospective_rep_rank.py \
+            --input-dir downloaded \
+            --pattern 'fashion_medium_transformer_rep_rank_reps*.csv' \
+            --output-dir aggregate \
+            --prefix fashion_medium_transformer_rep_rank \
+            --start 10 --end 20 --tolerance 0.01
+      - uses: actions/upload-artifact@v4
+        with:
+          name: fashion-medium-transformer-rep-rank-aggregate10
+          path: aggregate/*.csv
+          if-no-files-found: error
