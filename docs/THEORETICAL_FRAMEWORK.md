@@ -2,13 +2,15 @@
 
 ## Status
 
-This document states the current **working theory** suggested by the experiments. It is not a theorem and does not claim that representation effective rank is causal or universally sufficient.
+This document states the current **working theory** suggested by the experiments. It is not a theorem.
 
-The shortest current hypothesis is:
+A preregistered Q-scaling falsification now directly supports the finite-budget coverage component, while failing to establish representation effective rank as the quantitative mediator of that budget effect.
 
-> **hard + non-redundant environment-induced gradients -> broader reusable representation -> improved held-out mean performance, when train and held-out environments share reusable latent factors.**
+The shortest current hypothesis is therefore:
 
-This theory is intended to explain both the positive results and the observed counterexamples.
+> **Under a binding subset-update budget, hard + non-redundant environment-induced gradients improve coverage of unresolved task-relevant directions. This can improve held-out mean performance when train and held-out environments share reusable structure. Representation effective rank is a useful prospective marker in the tested conditions, but is not yet established as the causal mediator.**
+
+This framework is intended to explain both positive results and observed counterexamples.
 
 ## 1. Seed is an environment index, not an intrinsic optimization variable
 
@@ -28,7 +30,7 @@ SGO therefore does not optimize the integer value of a seed. It allocates a fini
 
 ## 2. Finite-budget selection problem
 
-Suppose a training step exposes `K` candidate environments but only `Q < K` can contribute expensive gradient evaluations/updates. The problem is then not merely to find a high-loss environment; it is to choose a small set whose learning signals are both relevant and non-redundant.
+Suppose a training step exposes `K` candidate environments but only `Q < K` can contribute to the backward update. The problem is then not merely to find a high-loss environment; it is to choose a small set whose learning signals are both relevant and non-redundant.
 
 A loss-hard selector prefers large
 
@@ -44,7 +46,7 @@ novelty(e | S) = ||g_e - P_S g_e||^2 / (||g_e||^2 + eps),
 
 where `P_S` projects onto the span of previously selected gradients. The implemented selectors use cheaper cosine/signature proxies rather than this exact projection objective.
 
-The practical score can be viewed as a surrogate for
+The practical objective can be viewed as a surrogate for
 
 ```text
 error relevance x directional novelty.
@@ -52,7 +54,39 @@ error relevance x directional novelty.
 
 Hardness prevents the selector from spending budget on arbitrary unusual directions; novelty prevents repeated expenditure on nearly identical errors.
 
-## 3. Why loss-hard can be locally better but globally worse
+## 3. Direct evidence that the budget must be binding
+
+Issue #32 preregistered the strongest direct test of the coverage interpretation so far. On the Digits geometric benchmark, candidate count was fixed at `K=16` while the number of candidate environments allowed into each backward update was varied over
+
+```text
+Q = {2, 4, 8, 12, 16}.
+```
+
+Thirty fresh paired replicates were run with a new held-out seed block. The frozen primary contrast compared low coverage (`Q={2,4}`) with high coverage (`Q={12,16}`).
+
+Gradient-novel minus loss-hard held-out mean benefit was:
+
+| Q | Q/K | mean benefit |
+|---:|---:|---:|
+| 2 | 0.125 | +2.151 pp |
+| 4 | 0.250 | +2.590 pp |
+| 8 | 0.500 | +2.076 pp |
+| 12 | 0.750 | +0.673 pp |
+| 16 | 1.000 | 0.000 pp |
+
+The preregistered low-minus-high attenuation was **+2.034 pp** (one-sided `p=1.06e-7`). At `Q=16`, where both methods necessarily update on all 16 candidates, every non-timing scientific output was exactly identical in all 30 pairs.
+
+The manipulation check behaved in the expected direction: the gradient-novel minus loss-hard selected pairwise-novelty difference fell from `+0.2802` at Q=2 to `+0.0230` at Q=12 and exactly zero at Q=16.
+
+This is direct support for the statement:
+
+> **The selector advantage depends strongly on having to choose a subset. When the subset constraint disappears, the advantage disappears exactly.**
+
+Strict monotonicity at every intermediate Q is not claimed; the frozen low-vs-high attenuation is the confirmatory result.
+
+See [`BUDGET_COVERAGE_MECHANISM.md`](BUDGET_COVERAGE_MECHANISM.md).
+
+## 4. Why loss-hard can be locally better but globally worse
 
 If several high-loss environments induce approximately the same correction,
 
@@ -60,16 +94,16 @@ If several high-loss environments induce approximately the same correction,
 g_1 ~= g_2 ~= g_3,
 ```
 
-then three backward evaluations may provide little more independent information than one. Loss-hard can still produce the largest immediate decrease in the current objective because it greedily attacks the largest local error.
+then several selected environments may provide little more independent coverage than one. Loss-hard can still produce the largest immediate decrease in the current objective because it greedily attacks the largest local error.
 
 This is consistent with the one-step audit: loss-hard can achieve a larger immediate one-step loss decrease while gradient-novel selection later produces better held-out performance.
 
 The proposed distinction is therefore:
 
 - loss-hard emphasizes **local descent magnitude**;
-- SGO emphasizes **coverage of unresolved learning directions under a binding budget**.
+- SGO emphasizes **coverage of unresolved learning directions under a binding subset budget**.
 
-## 4. Latent-factor view
+## 5. Latent-factor view
 
 Assume stochastic environments are generated from reusable latent factors `f_1, ..., f_m`. Around the current model state, an environment-induced gradient may be approximated as
 
@@ -85,9 +119,9 @@ This motivates the central abstraction:
 
 > **SGO is approximately a budgeted coverage problem over unresolved gradient subspaces.**
 
-The statement is qualitative; the current repository does not prove submodularity, optimality, or a universal approximation guarantee.
+The statement is qualitative; the repository does not prove submodularity, global optimality, or a universal approximation guarantee.
 
-## 5. Gradient diversity is not sufficient
+## 6. Gradient diversity is not sufficient
 
 The experiments directly reject the stronger rule
 
@@ -97,133 +131,159 @@ more gradient effective rank -> more held-out benefit.
 
 In the four-task trajectory audit, Breast-high produced the largest increase in accumulated gradient effective rank (`+7.148`) while held-out mean benefit was slightly negative and representation effective rank decreased.
 
-Therefore the useful object cannot be raw gradient-space expansion alone. Diverse local updates can reflect noise, incompatible factors, or directions that the model does not convert into reusable features.
+Therefore the useful object cannot be raw gradient-space expansion alone. Diverse local updates can reflect noise, incompatible factors, or directions that do not improve reusable task structure.
 
-## 6. Representation conversion hypothesis
+The Q-scaling experiment adds a different result: selected-gradient non-redundancy is clearly manipulated by Q and the held-out benefit attenuates strongly with that manipulation. Thus **subset-level non-redundancy matters**, while a generic global gradient-rank statistic remains insufficient as a success criterion.
 
-Let `Z(theta)` denote hidden representations measured on a fixed training-only probe and let `r_eff(Z)` be their effective rank. The current mechanism candidate is
+## 7. Representation conversion: marker supported, mediator still open
 
-```text
-gradient coverage
-    -> trajectory change
-    -> reusable representation change
-    -> held-out mean change.
-```
+Let `Z(theta)` denote hidden representations measured on a fixed training-only probe and let `r_eff(Z)` be their effective rank.
 
-The measurable directional proxy is
+Separate prospective experiments froze the directional rule
 
 ```text
-sign(delta r_eff(Z)) -> sign(delta held-out mean benefit).
+sign(delta r_eff(Z)) -> sign(delta condition-average held-out mean benefit).
 ```
 
-The key word is **conversion**: gradient novelty is useful when additional optimization-direction coverage is converted into a representation that retains more independently usable task factors.
+That rule has repeatedly matched at condition level and remains empirically useful.
 
-This can also be described as suppressing **partial representation concentration**: under a limited budget, repeated similar gradients may drive the model toward a smaller set of dominant features, while non-redundant hard gradients can force multiple reusable explanatory directions to remain represented. This is a candidate interpretation, not an established causal mechanism.
+However the new Q-scaling audit directly tested whether representation-rank advantage itself attenuates with the budget effect. Mean low-minus-high rank attenuation was positive (`+0.0735`) but did **not** pass the preregistered one-sided threshold (`p=0.1095`). The largest mean rank difference occurred at Q=8 rather than at the smallest budgets.
 
-## 7. Why held-out generalization can improve
+Therefore the stronger causal story
 
-The theory requires overlap between train and held-out latent structure. If held-out environments reuse factors encountered during training in new strengths or combinations, preserving more task-relevant factors can improve generalization.
+```text
+gradient coverage -> higher effective rank -> benefit
+```
+
+is not established as a quantitative mediation law.
+
+The safer current chain is
+
+```text
+gradient-subset coverage
+    -> trajectory / internal learning change
+    -> reusable task structure (latent mediator still unidentified)
+    -> held-out mean change,
+```
+
+with representation effective rank treated as an **informative but incomplete proxy** for that internal change.
+
+This distinction resolves an important ambiguity in the earlier framework: representation rank can predict condition-average direction without being the sole causal variable that explains how the effect scales with budget.
+
+## 8. Why held-out generalization can improve
+
+The theory requires overlap between train and held-out latent structure. If held-out environments reuse factors encountered during training in new strengths or combinations, broader coverage of task-relevant correction directions can improve generalization.
 
 The theory therefore predicts a larger benefit when stochastic environments contain structured, reusable variation than when novelty mainly reflects unstructured noise.
 
-It does **not** predict that maximizing rank is universally beneficial. Higher rank can encode nuisance/noise. Relevance from the task loss and non-redundancy must act together.
+It does **not** predict that maximizing rank is universally beneficial. Higher rank can encode nuisance/noise. Relevance from task loss and non-redundancy must act together.
 
-## 8. Existing observations explained by the framework
+## 9. Existing observations explained by the framework
 
 The framework jointly explains the following findings:
 
 1. **Structured geometric shifts show strong gains.** Reusable transformation factors create meaningful coverage opportunities.
-2. **Gradient novelty beats physical-parameter novelty.** What matters is how an environment acts through the current model, not distance in generator-parameter coordinates.
-3. **Pure diversity can fail.** Novel but low-relevance directions can waste update budget.
-4. **Loss-hard can win one-step descent.** The proposed benefit is trajectory/representation coverage, not greedy next-step loss reduction.
-5. **Raw gradient effective rank is insufficient.** Breast-high is the direct counterexample.
-6. **Representation effective-rank direction has prospective value.** It measures a downstream consequence of trajectory shaping closer to the proposed reusable-feature mechanism.
-7. **The rule is condition-average, not per-run.** A noisy proxy for a trajectory-level property need not classify individual stochastic runs reliably.
-8. **Tail robustness is not implied.** Improving average factor coverage does not guarantee that the rarest/extreme environment is covered.
+2. **The advantage collapses when Q reaches K.** The direct budget-scaling audit shows exact method identity when no subset selection remains.
+3. **Gradient novelty beats physical-parameter novelty.** What matters is how an environment acts through the current model, not distance in generator-parameter coordinates.
+4. **Pure diversity can fail.** Novel but low-relevance directions can waste update budget.
+5. **Loss-hard can win one-step descent.** The proposed benefit is trajectory coverage, not greedy next-step loss reduction.
+6. **Raw gradient effective rank is insufficient.** Breast-high is the direct counterexample.
+7. **Representation effective-rank direction has prospective value.** It is a downstream training-only marker closer to internal learning structure than raw gradient rank.
+8. **Representation rank is not yet a quantitative mediator.** Q-scaling benefit attenuation passed, while preregistered rank attenuation did not.
+9. **The rule is condition-average, not per-run.** A noisy marker for a trajectory-level property need not classify individual stochastic runs reliably.
+10. **Tail robustness is not implied.** Improving average coverage does not guarantee that the rarest/extreme environment is covered.
 
-## 9. Conditions under which SGO should help
+## 10. Conditions under which SGO should help
 
 The theory predicts benefit when most of the following hold:
 
-- the candidate/update budget is binding;
+- the candidate/update subset budget is binding (`Q << K`);
 - environments produce materially different model-conditioned gradients;
 - those differences contain reusable task structure rather than mostly noise;
 - train and held-out environments share latent factors;
-- the model has enough capacity to encode multiple factors but can still concentrate under biased sampling;
+- the model can convert selected updates into useful internal structure;
 - the selector retains hardness/relevance while reducing redundancy.
 
-## 10. Predicted failure regimes
+The first condition now has direct preregistered support in the Digits geometric benchmark.
+
+## 11. Predicted failure regimes
 
 The theory predicts weak, null, or negative effects when:
 
-- candidate gradients are already nearly redundant, so selection adds little;
-- the update budget is so large that ordinary sampling already covers the relevant subspace;
+- `Q` approaches `K`, so there is little or no subset-selection freedom;
+- candidate gradients are already nearly redundant;
 - novelty is dominated by unstructured noise or environment-specific nuisance;
 - train/held-out factors do not overlap;
-- the model cannot convert added gradient directions into reusable features;
+- the model cannot convert added gradient directions into reusable structure;
 - strong heterogeneity creates incompatible directions rather than reusable factors;
 - pure novelty displaces necessary hard examples;
 - a mean-oriented coverage gain misses rare tail environments.
 
-## 11. Current evidence for the representation-direction proxy
+At `Q=K=16`, the first predicted failure regime is now observed exactly: gradnov and loss-hard are identical.
 
-The frozen condition-average rule has matched the registered direction in eight prospective conditions across six datasets:
+## 12. Current evidence for the representation-direction proxy
+
+The frozen condition-average rule has matched the registered direction in **nine prospective conditions across six datasets**:
 
 - three additional Digits generators;
 - Wine;
 - Iris;
 - Diabetes regression, including the negative prediction;
 - FashionMNIST / Tiny Transformer;
+- FashionMNIST / Medium Transformer capacity-scaling test;
 - CIFAR-10 / ResNet-20.
 
-FashionMNIST was then extended with 20 independent new paired replicates under the same frozen rule and again reproduced positive rank direction with positive mean benefit. The combined Fashion estimate uses 30 pairs only for precision.
+FashionMNIST/Tiny Transformer was additionally extended with 20 independent new paired replicates under the same frozen rule and reproduced positive rank direction with positive mean benefit.
 
-The CIFAR/ResNet prospective audit produced mean training-only representation-rank delta `+0.03205`, above the predeclared `0.01` tolerance, and held-out mean benefit `+0.1703 pp`; the registered direction decision was **PASS**. The rank delta itself was noisy (`p ~= 0.146` descriptively), so the result supports the frozen directional decision, not a precise magnitude law.
+The Medium Transformer increased width from 48 to 96 and depth from 2 to 4 while keeping the selector and optimizer protocol fixed. Across 10 registered pairs, mean representation-rank delta was `+0.10293` and held-out mean benefit was `+0.9579 pp`; frozen decision **PASS**.
 
-## 12. What is not established
+The CIFAR/ResNet prospective audit produced mean training-only representation-rank delta `+0.03205`, above the predeclared `0.01` tolerance, and held-out mean benefit `+0.1703 pp`; frozen decision **PASS**. The rank delta itself was noisy (`p ~= 0.146` descriptively), so the result supports the frozen directional decision, not a precise magnitude law.
+
+These results support effective rank as a **condition-average directional predictor**. The budget-scaling PARTIAL PASS shows why that should not be conflated with causal mediation.
+
+## 13. What is not established
 
 Current evidence does not establish:
 
-- a causal mediation theorem from gradient novelty through representation rank;
+- a causal mediation theorem from gradient novelty through representation effective rank;
 - that effective rank itself is the causal quantity;
 - a universal calibrated threshold or magnitude map;
 - a reliable per-run gate;
 - a tail-safety predictor;
 - universal validity for large Transformers, language models, RL, or arbitrary stochastic processes;
-- a universal optimal gradient-novelty coefficient.
+- a universal optimal gradient-novelty coefficient;
+- that the exact Q-scaling curve transfers unchanged beyond the tested Digits/geometric family.
 
-## 13. Highest-value falsification program
+## 14. Highest-value falsification program
 
-The next mechanism experiments should attack this theory directly rather than only adding more favorable benchmarks.
+The budget-scaling experiment is now complete. The next experiments should identify what internal quantity mediates the strongly supported finite-budget coverage effect.
 
-### A. Mediation test
+### A. Representation intervention
 
-Measure whether condition-level changes satisfy the ordered relation
+Manipulate representation geometry **without** changing the selector. If artificially increasing effective rank does not reproduce the held-out gain, rank is a marker rather than the causal object. If targeted preservation of task-relevant directions does reproduce it, the causal hypothesis becomes more specific.
 
-```text
-selector -> gradient coverage -> representation change -> held-out mean.
-```
+### B. Matched-coverage / different-conversion test
 
-A useful test should compare models/conditions where gradient coverage increases but representation conversion differs.
-
-### B. Representation intervention
-
-Change representation rank/geometry without using the SGO selector. If held-out benefit follows rank manipulation directly, that supports a causal role; if not, rank may be only a marker of another trajectory property.
+Construct two regimes with comparable selected-gradient non-redundancy but different ability to reuse latent factors. This directly tests the conversion step after coverage.
 
 ### C. Structured-vs-unstructured matched novelty
 
-Construct environments with matched gradient-novelty magnitude but different latent-factor reuse. The theory predicts that structured reusable novelty should convert into representation/held-out gains more reliably than unstructured novelty.
+Construct environments with matched gradient-novelty magnitude but different latent-factor reuse. The theory predicts that structured reusable novelty should produce held-out gains more reliably than unstructured novelty.
 
-### D. Budget scaling
+### D. Early-trajectory mediator search
 
-Increase `Q`/training budget while holding the environment family fixed. If SGO mainly repairs finite-budget coverage, its advantage should shrink when ordinary sampling already covers the relevant subspace.
+Measure candidate internal diagnostics early in training and freeze them before final outcomes. The goal is to find a mediator/predictor that explains both condition direction and budget scaling without using final held-out results for calibration.
 
-### E. Same-hardware execution audit
+### E. Cross-task budget scaling
 
-The hosted-CPU audit shows numerical drift can persist across heterogeneous CPU runners even with one thread. Future causal/mechanism comparisons should preserve strong runtime provenance and, for bitwise studies, use a pinned hardware/runtime environment.
+Repeat the frozen low-vs-high Q contrast on a materially different task/architecture only after the mechanism definition is frozen, to determine whether the coverage attenuation generalizes beyond Digits/geometric shifts.
+
+### F. Same-hardware execution controls
+
+The hosted-CPU audit shows numerical drift can persist across heterogeneous runners even with one thread. Causal/mechanism experiments should preserve strong runtime provenance and use pinned hardware when bitwise cross-run claims are required.
 
 ## Working claim
 
 The strongest theory currently justified by the evidence is:
 
-> Under a finite learning budget, selecting stochastic environments that are both currently hard and non-redundant in model-conditioned gradient space can improve coverage of unresolved task-relevant directions. When that extra coverage is converted into a richer reusable hidden representation, held-out **mean** performance tends to improve in the tested structured regimes.
+> **SGO is a finite-budget stochastic-environment subset-selection method. When only a subset of candidate environments can contribute to each update, retaining hard examples while reducing gradient redundancy can substantially improve held-out mean performance in structured regimes. The advantage attenuates as the subset constraint is relaxed and disappears exactly when all candidates are used in the tested Q-scaling audit. Representation effective rank remains a useful condition-average marker, but the causal internal mediator of the coverage advantage is still open.**
