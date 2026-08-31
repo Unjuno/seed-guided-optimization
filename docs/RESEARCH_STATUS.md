@@ -16,40 +16,53 @@ A finding is labeled **supported** only within its stated comparison, task, and 
 | Relative redundancy control | Digits + independent Synthetic | absolute cosine targets do not transfer; within-step normalization transfers better in the tested tasks |
 | CIFAR-10 / ResNet-20 primary mean | 40 paired runs | mean +0.1206 pp; Holm(5) p=0.01336 under the unchanged primary protocol |
 | Gradient mechanism audit | mean/tail gradient + one-step tests | final gains are not explained by superior mean-gradient estimation or maximal one-step loss decrease alone |
-| FashionMNIST/Tiny Transformer extension | 20 independent new pairs | frozen condition-average rank direction replicated: rank +0.07853 and held-out mean +0.4377 pp |
-| Finite-budget coverage mechanism | preregistered Q-scaling, 30 pairs | low-vs-high Q benefit attenuation +2.034 pp, one-sided p=1.06e-7; at Q=K both methods are exactly identical |
+| FashionMNIST/Tiny Transformer extension | 20 independent new pairs | frozen condition-average raw-rank direction replicated: rank +0.07853 and held-out mean +0.4377 pp |
+| Finite-budget coverage mechanism | two preregistered n=30 Q-scaling runs on fresh blocks | low-vs-high benefit attenuation +2.034 pp (`p=1.06e-7`) then +2.086 pp (`p=5.16e-7`); Q=K gives exact method identity in both runs |
+| Raw-rank coordinate dependence | preregistered function-preserving intervention, 20 reps × 2 methods | raw hidden effective rank can move by roughly +2 to -6 while logits/predictions/metrics remain identical; raw rank is not a functionally intrinsic causal quantity |
 
 ## Prospectively supported but not universal proof
 
 | Topic | Evidence | Current conclusion |
 |---|---|---|
-| Representation effective-rank sign | **9 registered condition-level tests across 6 datasets** | sign(delta representation effective rank) matched sign(mean held-out benefit) in all nine registered conditions; this is condition-average evidence, not a per-run gate or causal law |
-| FashionMNIST/Tiny Transformer | initial n=10 + independent extension n=20 | initial PASS was followed by an exact-protocol independent directional replication; combined n=30 is precision-only |
-| FashionMNIST/Medium Transformer | n=10 architecture-capacity falsification | rank +0.10293 predicted positive and held-out mean was +0.9579 pp; frozen decision PASS |
-| CIFAR-10 / ResNet-20 representation rank | independent reps 40-49, n=10 | mean delta rank +0.03205 (>0.01 tolerance) predicted positive; held-out mean +0.1703 pp; frozen decision PASS |
+| Raw representation effective-rank sign | **9 registered condition-level tests across 6 datasets** | sign(delta raw representation effective rank) matched sign(mean held-out benefit) in all nine registered conditions; fixed-parameterization condition-average marker only |
+| FashionMNIST/Tiny Transformer | initial n=10 + independent extension n=20 | initial PASS followed by exact-protocol independent directional replication; combined n=30 is precision-only |
+| FashionMNIST/Medium Transformer | n=10 architecture-capacity test | raw rank +0.10293 predicted positive and held-out mean was +0.9579 pp; frozen decision PASS |
+| CIFAR-10 / ResNet-20 representation rank | independent reps 40-49, n=10 | raw rank +0.03205 predicted positive; held-out mean +0.1703 pp; frozen decision PASS |
 | CIFAR p10/minimum direction | 40 paired primary runs | positive direction, but Holm p=0.05294 / 0.08815; tail robustness remains unconfirmed |
 
-The nine registered conditions span Digits (three generators), Wine, Iris, Diabetes regression, FashionMNIST (Tiny and Medium Transformer conditions), and CIFAR-10. They are not nine independent datasets or independent Bernoulli trials.
+The nine registered raw-rank conditions span Digits (three generators), Wine, Iris, Diabetes regression, FashionMNIST (Tiny and Medium Transformer conditions), and CIFAR-10. They are not nine independent datasets or independent Bernoulli trials.
 
 ## Current working mechanism
 
-The best-supported theory is now narrower and better separated into a supported component and an open mediator:
+The best-supported theory is now:
 
 ```text
 binding subset-update budget
     + hard, non-redundant environment-induced gradients
-    -> better coverage of unresolved task-relevant directions
-    -> trajectory/internal-learning change
-    -> held-out mean benefit in structured regimes.
+    -> broader coverage of unresolved task-relevant directions
+    -> trajectory / learned-function change
+    -> held-out mean benefit in tested structured regimes.
 ```
 
-The **finite-budget coverage component now has direct preregistered support**. In the Q-scaling audit with K=16, held-out mean benefit was +2.151 pp at Q=2, +2.590 pp at Q=4, +2.076 pp at Q=8, +0.673 pp at Q=12, and exactly 0 at Q=16. The frozen low-Q minus high-Q attenuation was +2.034 pp (`p=1.06e-7`, one-sided). At Q=16 every non-timing scientific output was exactly identical across methods in all 30 pairs.
+The first Q-scaling audit with K=16 gave mean benefits +2.151, +2.590, +2.076, +0.673, and exactly 0 pp for Q=2,4,8,12,16. Frozen low-minus-high attenuation was +2.034 pp (`p=1.06e-7`).
 
-Raw accumulated gradient effective rank is not sufficient. Breast-high remains the central counterexample.
+A fully fresh preregistered replication using reps 300-329 and held-out seeds 17000-17079 gave +2.613, +2.443, +2.156, +0.885, and exactly 0 pp. Frozen attenuation was +2.086 pp (`p=5.16e-7`, approximate 95% interval +1.393 to +2.778 pp). Q=16 again had zero scientific mismatches.
 
-Representation effective rank remains a useful **condition-average directional marker**, but the new budget audit did not support it as the direct quantitative mediator: low-vs-high rank attenuation was +0.0735 with one-sided `p=0.1095`. The frozen mechanism decision was therefore **PARTIAL PASS**, not STRONG THEORY PASS.
+Thus **finite-budget subset coverage is independently replicated within the Digits/geometric family**.
 
-See `THEORETICAL_FRAMEWORK.md` and `BUDGET_COVERAGE_MECHANISM.md`.
+The causal internal mediator remains unidentified.
+
+## Representation-rank mechanism status
+
+Three results must be kept separate.
+
+1. **Raw rank predicts condition-average direction under fixed parameterizations.** The prospective record remains 9/9 registered conditions.
+2. **Raw rank is not a causal/functionally intrinsic quantity.** Issue #35 changed raw rank strongly under an exactly function-preserving positive diagonal reparameterization while every prediction and held-out/clean metric remained unchanged.
+3. **Channel-standardized rank does not rescue the mediator theory.** In fresh Issue #38, benefit attenuation replicated strongly, but standardized-rank attenuation was `-0.00271` with one-sided `p=0.5063`. Frozen decision: **COVERAGE REPLICATION ONLY**.
+
+Raw rank was secondary in Issue #38 and again showed positive attenuation (`+0.1780`, one-sided `p=0.0180`). This reinforces its interpretation as a repeatable **trajectory marker** rather than a causal state variable.
+
+See `THEORETICAL_FRAMEWORK.md`, `FUNCTION_PRESERVING_RANK_INTERVENTION.md`, and `STANDARDIZED_RANK_BUDGET_RESULT.md`.
 
 ## Important negative or null results
 
@@ -66,10 +79,12 @@ See `THEORETICAL_FRAMEWORK.md` and `BUDGET_COVERAGE_MECHANISM.md`.
 - An absolute selected-gradient cosine target can be infeasible on another task and force controller saturation.
 - Relative redundancy control is not a task-level safety guarantee.
 - The attempted per-environment representation-rank-SD tail rule failed on Wine and is retired.
-- The representation-rank rule is not reliable as a per-replicate gate; Fashion and CIFAR contain individual sign mismatches.
-- **Representation-rank attenuation did not pass the preregistered Q-scaling mechanism test** (`p=0.1095`), so effective rank should not be claimed as the sole/direct mediator of budget dependence.
+- The raw representation-rank rule is not reliable as a per-replicate gate.
+- Raw representation-rank attenuation failed the first frozen Q-scaling mediator threshold (`p=0.1095`).
+- Raw representation rank is coordinate-dependent under function-preserving reparameterization.
+- Channel-standardized effective rank is scale-invariant but **failed** the fresh preregistered budget-coupling test (`p=0.5063`).
 - Optimizer under-tuning can create a false selector failure.
-- Single-thread deterministic hosted-CPU execution did **not** eliminate CIFAR cross-run numerical drift; the preregistered execution audit decision is **DRIFT PERSISTS**.
+- Single-thread deterministic hosted-CPU execution did **not** eliminate CIFAR cross-run numerical drift; frozen decision **DRIFT PERSISTS**.
 
 ## Execution reproducibility finding
 
@@ -82,23 +97,23 @@ A preregistered hosted-CPU audit reran CIFAR reps 45 and 46 twice with OMP/MKL/O
 - aggregate held-out mean direction: positive in A and B;
 - decision: **DRIFT PERSISTS**.
 
-Rep45 was bitwise-identical between AMD EPYC 7763 and AMD EPYC 9V74. Rep46 drifted between AMD EPYC 7763 and Intel Xeon 6973P-C under the same pinned software/thread controls. Hardware-dependent numerical paths are a strong candidate, but the sole cause has not been isolated.
+Rep45 was bitwise-identical between AMD EPYC 7763 and AMD EPYC 9V74. Rep46 drifted between AMD EPYC 7763 and Intel Xeon 6973P-C under matching software/thread controls. Hardware-dependent numerical paths remain a strong candidate, not an isolated sole cause.
 
 ## Current open work
 
-1. **Identify the mediator after coverage:** run representation interventions and matched-coverage/different-conversion experiments to distinguish causal representation structure from effective-rank marking.
-2. Run a structured-vs-unstructured matched-novelty experiment with comparable gradient-novelty magnitude but different latent-factor reuse.
-3. Derive an actionable early-trajectory mediator/predictor without calibrating on final held-out results.
-4. Prospectively falsify the frozen condition-average rank marker on a materially different modality or larger architecture.
-5. Develop a genuinely new training-only tail-safety theory without retuning the failed rank-SD rule.
-6. Repeat the frozen Q-scaling contrast on a different task only after the mediator hypothesis is fixed.
-7. Use pinned hardware for bitwise studies and run GPU-vectorized wall-clock benchmarks at matched update/candidate budgets.
-8. Test naturally stochastic simulators or non-handcrafted environment processes.
+1. **Move beyond rank-based mediators.** Test training-only function-space diagnostics such as cross-environment probe transfer, class-conditional margin structure, or predictive disagreement.
+2. Run a matched-coverage / different-reusability experiment to isolate what happens after gradient-subspace coverage.
+3. Run structured-vs-unstructured matched-novelty tests with comparable selected-gradient non-redundancy.
+4. Repeat the frozen Q-scaling contrast on a materially different task/architecture; a third same-task replication is lower value.
+5. Derive an actionable early-trajectory function-space predictor without calibrating on final held-out results.
+6. Prospectively challenge the existing raw-rank marker on a materially different modality while keeping its fixed rule unchanged.
+7. Develop a genuinely new training-only tail-safety theory without recycling the failed rank-SD rule.
+8. Use pinned hardware for bitwise studies and run GPU-vectorized wall-clock comparisons at matched budgets.
 
 ## Public claim boundary
 
 Safe public wording:
 
-> Gradient-aware selection of stochastic training environments can improve held-out performance under some structured stochastic shifts. A preregistered Q-scaling audit directly supports a finite-budget subset-coverage explanation: the gradient-novelty advantage is large when only a small subset of candidates can contribute to each update, attenuates when most candidates are used, and becomes exactly zero when all K candidates are used. Across nine registered prospective conditions on six datasets, training-only representation effective-rank direction has matched the sign of condition-average mean benefit, but the Q-scaling audit did not support effective rank as the direct quantitative mediator of the budget effect.
+> Gradient-aware selection of stochastic training environments can improve held-out performance under some structured stochastic shifts. Two preregistered n=30 Q-scaling experiments on fresh blocks support a finite-budget subset-coverage explanation: the gradient-novelty advantage is large when only a small subset of candidates can contribute to each update, attenuates as Q approaches K, and becomes exactly zero when all K candidates are used. Raw hidden representation effective rank has a strong fixed-parameterization condition-average predictive record, but function-preserving intervention shows it is coordinate-dependent and not itself causal. Channel-standardized effective rank is scale-invariant but failed as the quantitative mediator in a fresh preregistered test.
 
 Do not claim a universally good seed family, universal selector/controller, causal representation-rank law, calibrated per-run gate, confirmed CIFAR tail robustness, general large-Transformer validity, bitwise cross-hardware hosted-CPU reproducibility, or GPU efficiency advantage.
