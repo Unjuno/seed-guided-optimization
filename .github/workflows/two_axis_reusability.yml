@@ -1,0 +1,206 @@
+name: Gated two-axis nuisance reusability test
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'experiments/two_axis_reusability.py'
+      - 'experiments/summarize_two_axis_calibration.py'
+      - 'experiments/summarize_two_axis_reusability.py'
+      - '.github/workflows/two_axis_reusability.yml'
+  workflow_dispatch:
+
+jobs:
+  calibration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      OMP_NUM_THREADS: '1'
+      MKL_NUM_THREADS: '1'
+      OPENBLAS_NUM_THREADS: '1'
+      NUMEXPR_NUM_THREADS: '1'
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - shard: reps650_654
+            start: 650
+            end: 655
+          - shard: reps655_659
+            start: 655
+            end: 660
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Install pinned dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      - name: Run training-only two-axis calibration
+        run: |
+          mkdir -p artifacts
+          python experiments/two_axis_reusability.py calibrate \
+            --start ${{ matrix.start }} \
+            --end ${{ matrix.end }} \
+            --output-dir artifacts
+      - uses: actions/upload-artifact@v4
+        with:
+          name: two-axis-calibration-${{ matrix.shard }}
+          path: artifacts/*.csv
+          if-no-files-found: error
+
+  calibration_summary:
+    needs: calibration
+    runs-on: ubuntu-latest
+    outputs:
+      selected_alpha: ${{ steps.seal.outputs.selected_alpha }}
+      selected_beta: ${{ steps.seal.outputs.selected_beta }}
+      calibration_pass: ${{ steps.seal.outputs.calibration_pass }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install summarizer dependencies
+        run: pip install numpy==2.3.5 pandas==2.2.3
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: two-axis-calibration-*
+          path: downloaded
+          merge-multiple: true
+      - name: Apply frozen two-axis calibration gate
+        run: |
+          python experiments/summarize_two_axis_calibration.py \
+            --input-dir downloaded \
+            --output-dir calibration_aggregate
+      - name: Seal calibration outputs
+        id: seal
+        run: |
+          alpha=$(python - <<'PY'
+          import pandas as pd
+          d=pd.read_csv('calibration_aggregate/two_axis_calibration_decision.csv')
+          print(f"{float(d.loc[0,'selected_alpha']):.2f}")
+          PY
+          )
+          beta=$(python - <<'PY'
+          import pandas as pd
+          d=pd.read_csv('calibration_aggregate/two_axis_calibration_decision.csv')
+          print(f"{float(d.loc[0,'selected_beta']):.2f}")
+          PY
+          )
+          passed=$(python - <<'PY'
+          import pandas as pd
+          d=pd.read_csv('calibration_aggregate/two_axis_calibration_decision.csv')
+          print(str(bool(d.loc[0,'calibration_pass'])).lower())
+          PY
+          )
+          echo "selected_alpha=$alpha" >> "$GITHUB_OUTPUT"
+          echo "selected_beta=$beta" >> "$GITHUB_OUTPUT"
+          echo "calibration_pass=$passed" >> "$GITHUB_OUTPUT"
+          echo "SEALED_ALPHA=$alpha SEALED_BETA=$beta CALIBRATION_PASS=$passed"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: two-axis-calibration-decision
+          path: calibration_aggregate/*.csv
+          if-no-files-found: error
+
+  confirm:
+    needs: calibration_summary
+    if: needs.calibration_summary.outputs.calibration_pass == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      OMP_NUM_THREADS: '1'
+      MKL_NUM_THREADS: '1'
+      OPENBLAS_NUM_THREADS: '1'
+      NUMEXPR_NUM_THREADS: '1'
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - shard: reps700_704
+            start: 700
+            end: 705
+          - shard: reps705_709
+            start: 705
+            end: 710
+          - shard: reps710_714
+            start: 710
+            end: 715
+          - shard: reps715_719
+            start: 715
+            end: 720
+          - shard: reps720_724
+            start: 720
+            end: 725
+          - shard: reps725_729
+            start: 725
+            end: 730
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Install pinned dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      - name: Run sealed confirmatory training
+        run: |
+          mkdir -p artifacts
+          python experiments/two_axis_reusability.py train \
+            --start ${{ matrix.start }} \
+            --end ${{ matrix.end }} \
+            --alpha ${{ needs.calibration_summary.outputs.selected_alpha }} \
+            --beta ${{ needs.calibration_summary.outputs.selected_beta }} \
+            --output-dir artifacts
+      - name: Evaluate fresh held-out environments
+        run: |
+          python experiments/two_axis_reusability.py evaluate \
+            --start ${{ matrix.start }} \
+            --end ${{ matrix.end }} \
+            --alpha ${{ needs.calibration_summary.outputs.selected_alpha }} \
+            --beta ${{ needs.calibration_summary.outputs.selected_beta }} \
+            --output-dir artifacts
+      - name: Remove model states before upload
+        if: always()
+        run: rm -rf artifacts/states
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: two-axis-confirm-${{ matrix.shard }}
+          path: artifacts/*.csv
+          if-no-files-found: warn
+
+  aggregate:
+    needs: [calibration_summary, confirm]
+    if: needs.calibration_summary.outputs.calibration_pass == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install summarizer dependencies
+        run: pip install numpy==2.3.5 pandas==2.2.3 scipy==1.17.0
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: two-axis-confirm-*
+          path: downloaded
+          merge-multiple: true
+      - name: Apply preregistered conversion decision
+        run: |
+          python experiments/summarize_two_axis_reusability.py \
+            --input-dir downloaded \
+            --output-dir aggregate \
+            --sealed-alpha ${{ needs.calibration_summary.outputs.selected_alpha }} \
+            --sealed-beta ${{ needs.calibration_summary.outputs.selected_beta }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: two-axis-aggregate30
+          path: aggregate/*.csv
+          if-no-files-found: error
