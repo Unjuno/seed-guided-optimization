@@ -1,0 +1,185 @@
+name: Matched-novelty structured-vs-unstructured conversion test
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'experiments/matched_novelty_reusability.py'
+      - 'experiments/summarize_matched_novelty_calibration.py'
+      - 'experiments/summarize_matched_novelty_reusability.py'
+      - '.github/workflows/matched_novelty_reusability.yml'
+  workflow_dispatch:
+
+jobs:
+  calibration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      OMP_NUM_THREADS: '1'
+      MKL_NUM_THREADS: '1'
+      OPENBLAS_NUM_THREADS: '1'
+      NUMEXPR_NUM_THREADS: '1'
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - shard: reps450_454
+            start: 450
+            end: 455
+          - shard: reps455_459
+            start: 455
+            end: 460
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Install pinned dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      - name: Run training-only calibration
+        run: |
+          mkdir -p artifacts
+          python experiments/matched_novelty_reusability.py calibrate \
+            --start ${{ matrix.start }} \
+            --end ${{ matrix.end }} \
+            --output-dir artifacts
+      - uses: actions/upload-artifact@v4
+        with:
+          name: matched-novelty-calibration-${{ matrix.shard }}
+          path: artifacts/*.csv
+          if-no-files-found: error
+
+  calibration_summary:
+    needs: calibration
+    runs-on: ubuntu-latest
+    outputs:
+      selected_severity: ${{ steps.seal.outputs.selected_severity }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install summarizer dependencies
+        run: pip install numpy==2.3.5 pandas==2.2.3
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: matched-novelty-calibration-*
+          path: downloaded
+          merge-multiple: true
+      - name: Apply frozen training-only calibration rule
+        run: |
+          python experiments/summarize_matched_novelty_calibration.py \
+            --input-dir downloaded \
+            --output-dir calibration_aggregate
+      - name: Seal selected nuisance severity
+        id: seal
+        run: |
+          value=$(python - <<'PY'
+          import pandas as pd
+          d = pd.read_csv('calibration_aggregate/matched_novelty_calibration_decision.csv')
+          print(f"{float(d.loc[0,'selected_severity']):.2f}")
+          PY
+          )
+          echo "selected_severity=$value" >> "$GITHUB_OUTPUT"
+          echo "SEALED_NUISANCE_SEVERITY=$value"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: matched-novelty-calibration-decision
+          path: calibration_aggregate/*.csv
+          if-no-files-found: error
+
+  confirm:
+    needs: calibration_summary
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      OMP_NUM_THREADS: '1'
+      MKL_NUM_THREADS: '1'
+      OPENBLAS_NUM_THREADS: '1'
+      NUMEXPR_NUM_THREADS: '1'
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - shard: reps500_504
+            start: 500
+            end: 505
+          - shard: reps505_509
+            start: 505
+            end: 510
+          - shard: reps510_514
+            start: 510
+            end: 515
+          - shard: reps515_519
+            start: 515
+            end: 520
+          - shard: reps520_524
+            start: 520
+            end: 525
+          - shard: reps525_529
+            start: 525
+            end: 530
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Install pinned dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      - name: Run sealed confirmatory training
+        run: |
+          mkdir -p artifacts
+          python experiments/matched_novelty_reusability.py train \
+            --start ${{ matrix.start }} \
+            --end ${{ matrix.end }} \
+            --severity ${{ needs.calibration_summary.outputs.selected_severity }} \
+            --output-dir artifacts
+      - name: Evaluate fresh confirmatory held-out environments
+        run: |
+          python experiments/matched_novelty_reusability.py evaluate \
+            --start ${{ matrix.start }} \
+            --end ${{ matrix.end }} \
+            --severity ${{ needs.calibration_summary.outputs.selected_severity }} \
+            --output-dir artifacts
+      - name: Remove model states before upload
+        if: always()
+        run: rm -rf artifacts/states
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: matched-novelty-confirm-${{ matrix.shard }}
+          path: artifacts/*.csv
+          if-no-files-found: warn
+
+  aggregate:
+    needs: [calibration_summary, confirm]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install summarizer dependencies
+        run: pip install numpy==2.3.5 pandas==2.2.3 scipy==1.17.0
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: matched-novelty-confirm-*
+          path: downloaded
+          merge-multiple: true
+      - name: Apply preregistered conversion decision
+        run: |
+          python experiments/summarize_matched_novelty_reusability.py \
+            --input-dir downloaded \
+            --output-dir aggregate \
+            --sealed-severity ${{ needs.calibration_summary.outputs.selected_severity }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: matched-novelty-aggregate30
+          path: aggregate/*.csv
+          if-no-files-found: error
