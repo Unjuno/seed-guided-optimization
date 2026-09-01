@@ -21,7 +21,7 @@ def summarize(frame:pd.DataFrame)->tuple[float,float]:
     novelty=[]; losses=[]
     for rep in EXPECTED_REPS:
         part=frame[frame.rep==rep].set_index('method')
-        if set(part.index)!={'loss_hard','gradnov'}: raise ValueError(f'incomplete rep {rep}')
+        if set(part.index)!={'loss_hard','gradnov'} or len(part)!=2: raise ValueError(f'incomplete/duplicate rep {rep}')
         novelty.append(float(part.loc['gradnov','selected_pairwise_novelty']-part.loc['loss_hard','selected_pairwise_novelty']))
         losses.append(float(part['mean_candidate_loss'].mean()))
     return float(np.mean(novelty)),float(np.mean(losses))
@@ -32,15 +32,16 @@ def main()->None:
     out=Path(a.output_dir); out.mkdir(parents=True,exist_ok=True); df=load_parts(Path(a.input_dir))
     expected=len(EXPECTED_REPS)*(1+len(ALPHAS)*len(BETAS))*2
     if len(df)!=expected: raise ValueError(f'expected {expected} rows got {len(df)}')
-    if df.duplicated(['rep','family','alpha','beta','method'],keep=False).any() and False: pass
     structured=df[df.family=='structured']
     if len(structured)!=len(EXPECTED_REPS)*2: raise ValueError('structured calibration incomplete')
+    if structured.duplicated(['rep','method']).any(): raise ValueError('structured duplicates')
     s_nov,s_loss=summarize(structured)
     rows=[]
     for alpha in ALPHAS:
         for beta in BETAS:
             part=df[(df.family=='nuisance') & np.isclose(df.alpha,alpha) & np.isclose(df.beta,beta)]
             if len(part)!=len(EXPECTED_REPS)*2: raise ValueError(f'grid incomplete alpha={alpha} beta={beta}')
+            if part.duplicated(['rep','method']).any(): raise ValueError(f'grid duplicates alpha={alpha} beta={beta}')
             n_nov,n_loss=summarize(part); nm=abs(n_nov-s_nov); lm=abs(n_loss-s_loss)
             rows.append({'alpha':alpha,'beta':beta,'structured_novelty_gain':s_nov,'nuisance_novelty_gain':n_nov,'novelty_mismatch':nm,'structured_candidate_loss':s_loss,'nuisance_candidate_loss':n_loss,'candidate_loss_mismatch':lm,'calibration_score':nm/0.03+lm/0.10})
     summary=pd.DataFrame(rows).sort_values(['calibration_score','alpha','beta']).reset_index(drop=True); best=summary.iloc[0]
