@@ -1,0 +1,2 @@
+selected_severity,calibration_novelty_mismatch,novelty_tolerance,calibration_candidate_loss_mismatch,candidate_loss_tolerance,calibration_pass,heldout_used,decision
+0.7,0.05796997148543592,0.03,0.06260873049497606,0.1,False,False,CALIBRATION MATCH FAILURE
