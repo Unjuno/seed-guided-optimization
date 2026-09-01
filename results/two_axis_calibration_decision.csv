@@ -1,0 +1,2 @@
+selected_alpha,selected_beta,calibration_novelty_mismatch,novelty_tolerance,calibration_candidate_loss_mismatch,candidate_loss_tolerance,calibration_pass,heldout_used,decision
+0.65,0.15,0.044089266499504426,0.03,0.0013640995323658256,0.1,False,False,CALIBRATION MATCH FAILURE
