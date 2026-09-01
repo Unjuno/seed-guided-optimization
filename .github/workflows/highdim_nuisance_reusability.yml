@@ -1,0 +1,195 @@
+name: Gated high-dimensional nuisance matched-novelty test
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'experiments/highdim_nuisance_reusability.py'
+      - 'experiments/summarize_highdim_nuisance_calibration.py'
+      - 'experiments/summarize_highdim_nuisance_reusability.py'
+      - '.github/workflows/highdim_nuisance_reusability.yml'
+  workflow_dispatch:
+
+jobs:
+  calibration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      OMP_NUM_THREADS: '1'
+      MKL_NUM_THREADS: '1'
+      OPENBLAS_NUM_THREADS: '1'
+      NUMEXPR_NUM_THREADS: '1'
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - shard: reps550_554
+            start: 550
+            end: 555
+          - shard: reps555_559
+            start: 555
+            end: 560
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Install pinned dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      - name: Run training-only calibration
+        run: |
+          mkdir -p artifacts
+          python experiments/highdim_nuisance_reusability.py calibrate \
+            --start ${{ matrix.start }} \
+            --end ${{ matrix.end }} \
+            --output-dir artifacts
+      - uses: actions/upload-artifact@v4
+        with:
+          name: highdim-calibration-${{ matrix.shard }}
+          path: artifacts/*.csv
+          if-no-files-found: error
+
+  calibration_summary:
+    needs: calibration
+    runs-on: ubuntu-latest
+    outputs:
+      selected_severity: ${{ steps.seal.outputs.selected_severity }}
+      calibration_pass: ${{ steps.seal.outputs.calibration_pass }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install summarizer dependencies
+        run: pip install numpy==2.3.5 pandas==2.2.3
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: highdim-calibration-*
+          path: downloaded
+          merge-multiple: true
+      - name: Apply frozen calibration gate
+        run: |
+          python experiments/summarize_highdim_nuisance_calibration.py \
+            --input-dir downloaded \
+            --output-dir calibration_aggregate
+      - name: Seal calibration outputs
+        id: seal
+        run: |
+          severity=$(python - <<'PY'
+          import pandas as pd
+          d=pd.read_csv('calibration_aggregate/highdim_calibration_decision.csv')
+          print(f"{float(d.loc[0,'selected_severity']):.2f}")
+          PY
+          )
+          passed=$(python - <<'PY'
+          import pandas as pd
+          d=pd.read_csv('calibration_aggregate/highdim_calibration_decision.csv')
+          print(str(bool(d.loc[0,'calibration_pass'])).lower())
+          PY
+          )
+          echo "selected_severity=$severity" >> "$GITHUB_OUTPUT"
+          echo "calibration_pass=$passed" >> "$GITHUB_OUTPUT"
+          echo "SEALED_SEVERITY=$severity CALIBRATION_PASS=$passed"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: highdim-calibration-decision
+          path: calibration_aggregate/*.csv
+          if-no-files-found: error
+
+  confirm:
+    needs: calibration_summary
+    if: needs.calibration_summary.outputs.calibration_pass == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      OMP_NUM_THREADS: '1'
+      MKL_NUM_THREADS: '1'
+      OPENBLAS_NUM_THREADS: '1'
+      NUMEXPR_NUM_THREADS: '1'
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - shard: reps600_604
+            start: 600
+            end: 605
+          - shard: reps605_609
+            start: 605
+            end: 610
+          - shard: reps610_614
+            start: 610
+            end: 615
+          - shard: reps615_619
+            start: 615
+            end: 620
+          - shard: reps620_624
+            start: 620
+            end: 625
+          - shard: reps625_629
+            start: 625
+            end: 630
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Install pinned dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      - name: Run sealed confirmatory training
+        run: |
+          mkdir -p artifacts
+          python experiments/highdim_nuisance_reusability.py train \
+            --start ${{ matrix.start }} \
+            --end ${{ matrix.end }} \
+            --severity ${{ needs.calibration_summary.outputs.selected_severity }} \
+            --output-dir artifacts
+      - name: Evaluate fresh held-out environments
+        run: |
+          python experiments/highdim_nuisance_reusability.py evaluate \
+            --start ${{ matrix.start }} \
+            --end ${{ matrix.end }} \
+            --severity ${{ needs.calibration_summary.outputs.selected_severity }} \
+            --output-dir artifacts
+      - name: Remove model states before upload
+        if: always()
+        run: rm -rf artifacts/states
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: highdim-confirm-${{ matrix.shard }}
+          path: artifacts/*.csv
+          if-no-files-found: warn
+
+  aggregate:
+    needs: [calibration_summary, confirm]
+    if: needs.calibration_summary.outputs.calibration_pass == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install summarizer dependencies
+        run: pip install numpy==2.3.5 pandas==2.2.3 scipy==1.17.0
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: highdim-confirm-*
+          path: downloaded
+          merge-multiple: true
+      - name: Apply frozen conversion decision
+        run: |
+          python experiments/summarize_highdim_nuisance_reusability.py \
+            --input-dir downloaded \
+            --output-dir aggregate \
+            --sealed-severity ${{ needs.calibration_summary.outputs.selected_severity }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: highdim-aggregate30
+          path: aggregate/*.csv
+          if-no-files-found: error
