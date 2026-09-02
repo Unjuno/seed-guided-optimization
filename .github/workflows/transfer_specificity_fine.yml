@@ -1,0 +1,176 @@
+name: Fine-calibrated identical-training transfer-specificity test
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'experiments/transfer_specificity_fine.py'
+      - 'experiments/summarize_transfer_calibration_fine.py'
+      - 'experiments/summarize_transfer_specificity_fine.py'
+      - '.github/workflows/transfer_specificity_fine.yml'
+  workflow_dispatch:
+
+jobs:
+  calibration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      OMP_NUM_THREADS: '1'
+      MKL_NUM_THREADS: '1'
+      OPENBLAS_NUM_THREADS: '1'
+      NUMEXPR_NUM_THREADS: '1'
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - shard: reps950_954
+            start: 950
+            end: 955
+          - shard: reps955_959
+            start: 955
+            end: 960
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Install pinned dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      - name: Run loss-hard-only fine evaluation calibration
+        run: |
+          mkdir -p artifacts
+          python experiments/transfer_specificity_fine.py calibrate --start ${{ matrix.start }} --end ${{ matrix.end }} --output-dir artifacts
+      - uses: actions/upload-artifact@v4
+        with:
+          name: transfer-fine-calibration-${{ matrix.shard }}
+          path: artifacts/*.csv
+          if-no-files-found: error
+
+  calibration_summary:
+    needs: calibration
+    runs-on: ubuntu-latest
+    outputs:
+      selected_alpha: ${{ steps.seal.outputs.selected_alpha }}
+      calibration_pass: ${{ steps.seal.outputs.calibration_pass }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install summarizer dependencies
+        run: pip install numpy==2.3.5 pandas==2.2.3
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: transfer-fine-calibration-*
+          path: downloaded
+          merge-multiple: true
+      - name: Apply frozen fine difficulty calibration
+        run: python experiments/summarize_transfer_calibration_fine.py --input-dir downloaded --output-dir calibration_aggregate
+      - name: Seal calibration outputs
+        id: seal
+        run: |
+          alpha=$(python - <<'PY'
+          import pandas as pd
+          d=pd.read_csv('calibration_aggregate/transfer_calibration_decision.csv')
+          print(f"{float(d.loc[0,'selected_alpha']):.2f}")
+          PY
+          )
+          passed=$(python - <<'PY'
+          import pandas as pd
+          d=pd.read_csv('calibration_aggregate/transfer_calibration_decision.csv')
+          print(str(bool(d.loc[0,'calibration_pass'])).lower())
+          PY
+          )
+          echo "selected_alpha=$alpha" >> "$GITHUB_OUTPUT"
+          echo "calibration_pass=$passed" >> "$GITHUB_OUTPUT"
+          echo "SEALED_ALPHA=$alpha CALIBRATION_PASS=$passed"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: transfer-fine-calibration-decision
+          path: calibration_aggregate/*.csv
+          if-no-files-found: error
+
+  confirm:
+    needs: calibration_summary
+    if: needs.calibration_summary.outputs.calibration_pass == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      OMP_NUM_THREADS: '1'
+      MKL_NUM_THREADS: '1'
+      OPENBLAS_NUM_THREADS: '1'
+      NUMEXPR_NUM_THREADS: '1'
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - shard: reps1000_1004
+            start: 1000
+            end: 1005
+          - shard: reps1005_1009
+            start: 1005
+            end: 1010
+          - shard: reps1010_1014
+            start: 1010
+            end: 1015
+          - shard: reps1015_1019
+            start: 1015
+            end: 1020
+          - shard: reps1020_1024
+            start: 1020
+            end: 1025
+          - shard: reps1025_1029
+            start: 1025
+            end: 1030
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Install pinned dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      - name: Train fresh identical geometric models and seal states
+        run: |
+          mkdir -p artifacts
+          python experiments/transfer_specificity_fine.py train --start ${{ matrix.start }} --end ${{ matrix.end }} --output-dir artifacts
+      - name: Evaluate fresh shared and nuisance heldout families
+        run: python experiments/transfer_specificity_fine.py evaluate --start ${{ matrix.start }} --end ${{ matrix.end }} --alpha ${{ needs.calibration_summary.outputs.selected_alpha }} --output-dir artifacts
+      - name: Remove model states before upload
+        if: always()
+        run: rm -rf artifacts/states
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: transfer-fine-confirm-${{ matrix.shard }}
+          path: artifacts/*.csv
+          if-no-files-found: warn
+
+  aggregate:
+    needs: [calibration_summary, confirm]
+    if: needs.calibration_summary.outputs.calibration_pass == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install summarizer dependencies
+        run: pip install numpy==2.3.5 pandas==2.2.3 scipy==1.17.0
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: transfer-fine-confirm-*
+          path: downloaded
+          merge-multiple: true
+      - name: Apply preregistered transfer-specificity decision
+        run: python experiments/summarize_transfer_specificity_fine.py --input-dir downloaded --output-dir aggregate --sealed-alpha ${{ needs.calibration_summary.outputs.selected_alpha }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: transfer-fine-aggregate30
+          path: aggregate/*.csv
+          if-no-files-found: error
