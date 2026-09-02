@@ -1,0 +1,2 @@
+selected_alpha,calibration_shared_mean_accuracy,calibration_nuisance_mean_accuracy,calibration_accuracy_mismatch,accuracy_tolerance,calibration_pass,gradnov_used_for_calibration,decision
+0.1,0.5376067423820496,0.4193370784819126,0.11826966390013705,0.01,False,False,CALIBRATION DIFFICULTY MATCH FAILURE
