@@ -1,0 +1,184 @@
+name: Dual-evaluation calibrated transfer-specificity test
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'experiments/transfer_specificity_dual_eval.py'
+      - 'experiments/summarize_transfer_dual_calibration.py'
+      - 'experiments/summarize_transfer_dual_specificity.py'
+      - '.github/workflows/transfer_specificity_dual_eval.yml'
+  workflow_dispatch:
+
+jobs:
+  calibration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      OMP_NUM_THREADS: '1'
+      MKL_NUM_THREADS: '1'
+      OPENBLAS_NUM_THREADS: '1'
+      NUMEXPR_NUM_THREADS: '1'
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - shard: reps1050_1054
+            start: 1050
+            end: 1055
+          - shard: reps1055_1059
+            start: 1055
+            end: 1060
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Install pinned dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      - name: Run loss-hard-only dual evaluation calibration
+        run: |
+          mkdir -p artifacts
+          python experiments/transfer_specificity_dual_eval.py calibrate --start ${{ matrix.start }} --end ${{ matrix.end }} --output-dir artifacts
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dual-transfer-calibration-${{ matrix.shard }}
+          path: artifacts/*.csv
+          if-no-files-found: error
+
+  calibration_summary:
+    needs: calibration
+    runs-on: ubuntu-latest
+    outputs:
+      selected_lambda: ${{ steps.seal.outputs.selected_lambda }}
+      selected_alpha: ${{ steps.seal.outputs.selected_alpha }}
+      calibration_pass: ${{ steps.seal.outputs.calibration_pass }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install summarizer dependencies
+        run: pip install numpy==2.3.5 pandas==2.2.3
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: dual-transfer-calibration-*
+          path: downloaded
+          merge-multiple: true
+      - name: Apply frozen dual evaluation calibration
+        run: python experiments/summarize_transfer_dual_calibration.py --input-dir downloaded --output-dir calibration_aggregate
+      - name: Seal calibration outputs
+        id: seal
+        run: |
+          lambda=$(python - <<'PY'
+          import pandas as pd
+          d=pd.read_csv('calibration_aggregate/dual_transfer_calibration_decision.csv')
+          print(f"{float(d.loc[0,'selected_lambda']):.3f}")
+          PY
+          )
+          alpha=$(python - <<'PY'
+          import pandas as pd
+          d=pd.read_csv('calibration_aggregate/dual_transfer_calibration_decision.csv')
+          print(f"{float(d.loc[0,'selected_alpha']):.3f}")
+          PY
+          )
+          passed=$(python - <<'PY'
+          import pandas as pd
+          d=pd.read_csv('calibration_aggregate/dual_transfer_calibration_decision.csv')
+          print(str(bool(d.loc[0,'calibration_pass'])).lower())
+          PY
+          )
+          echo "selected_lambda=$lambda" >> "$GITHUB_OUTPUT"
+          echo "selected_alpha=$alpha" >> "$GITHUB_OUTPUT"
+          echo "calibration_pass=$passed" >> "$GITHUB_OUTPUT"
+          echo "SEALED_LAMBDA=$lambda SEALED_ALPHA=$alpha CALIBRATION_PASS=$passed"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dual-transfer-calibration-decision
+          path: calibration_aggregate/*.csv
+          if-no-files-found: error
+
+  confirm:
+    needs: calibration_summary
+    if: needs.calibration_summary.outputs.calibration_pass == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      OMP_NUM_THREADS: '1'
+      MKL_NUM_THREADS: '1'
+      OPENBLAS_NUM_THREADS: '1'
+      NUMEXPR_NUM_THREADS: '1'
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - shard: reps1100_1104
+            start: 1100
+            end: 1105
+          - shard: reps1105_1109
+            start: 1105
+            end: 1110
+          - shard: reps1110_1114
+            start: 1110
+            end: 1115
+          - shard: reps1115_1119
+            start: 1115
+            end: 1120
+          - shard: reps1120_1124
+            start: 1120
+            end: 1125
+          - shard: reps1125_1129
+            start: 1125
+            end: 1130
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Install pinned dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      - name: Train fresh identical geometric models and seal states
+        run: |
+          mkdir -p artifacts
+          python experiments/transfer_specificity_dual_eval.py train --start ${{ matrix.start }} --end ${{ matrix.end }} --output-dir artifacts
+      - name: Evaluate fresh shared and nuisance heldout families
+        run: python experiments/transfer_specificity_dual_eval.py evaluate --start ${{ matrix.start }} --end ${{ matrix.end }} --lambda-strength ${{ needs.calibration_summary.outputs.selected_lambda }} --alpha ${{ needs.calibration_summary.outputs.selected_alpha }} --output-dir artifacts
+      - name: Remove model states before upload
+        if: always()
+        run: rm -rf artifacts/states
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: dual-transfer-confirm-${{ matrix.shard }}
+          path: artifacts/*.csv
+          if-no-files-found: warn
+
+  aggregate:
+    needs: [calibration_summary, confirm]
+    if: needs.calibration_summary.outputs.calibration_pass == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install summarizer dependencies
+        run: pip install numpy==2.3.5 pandas==2.2.3 scipy==1.17.0
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: dual-transfer-confirm-*
+          path: downloaded
+          merge-multiple: true
+      - name: Apply preregistered dual-evaluation transfer-specificity decision
+        run: python experiments/summarize_transfer_dual_specificity.py --input-dir downloaded --output-dir aggregate --sealed-lambda ${{ needs.calibration_summary.outputs.selected_lambda }} --sealed-alpha ${{ needs.calibration_summary.outputs.selected_alpha }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dual-transfer-aggregate30
+          path: aggregate/*.csv
+          if-no-files-found: error
