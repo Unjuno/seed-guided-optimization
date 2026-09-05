@@ -1,0 +1,2 @@
+decision,full_pass,interaction_pass,protocol_hash,full_n,full_mean,full_se,full_ci95_low,full_ci95_high,full_p_one_sided,interaction_n,interaction_mean,interaction_se,interaction_ci95_low,interaction_ci95_high,interaction_p_one_sided
+DOSE-DEPENDENT BENEFIT PASS,True,True,2eb5b4ebee30ee2f3d776b1c31db3e77ae6b8a642b986377ab6708c46b56bffa,30,0.028422284908592728,0.002967251487190325,0.022353574211328726,0.03449099560585673,8.682656152228692e-11,30,0.016212544627487686,0.009481071906209216,-0.003178424674283014,0.03560351392925838,0.0489740430265283
