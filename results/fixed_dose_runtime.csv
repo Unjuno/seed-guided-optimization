@@ -1,0 +1,7 @@
+start,end,cpu,mhz_snapshot,python,torch,threads,deterministic,mkldnn
+1200,1205,AMD EPYC 9V74 80-Core Processor,2596.150,3.12.14,2.10.0+cpu,1,True,True
+1205,1210,AMD EPYC 7763 64-Core Processor,2445.425,3.12.14,2.10.0+cpu,1,True,True
+1210,1215,AMD EPYC 7763 64-Core Processor,2445.428,3.12.14,2.10.0+cpu,1,True,True
+1215,1220,AMD EPYC 9V74 80-Core Processor,2596.149,3.12.14,2.10.0+cpu,1,True,True
+1220,1225,AMD EPYC 7763 64-Core Processor,2693.801,3.12.14,2.10.0+cpu,1,True,True
+1225,1230,INTEL(R) XEON(R) PLATINUM 8573C,2300.000,3.12.14,2.10.0+cpu,1,True,True
