@@ -4,7 +4,7 @@
 
 This is a **working theory**, not a theorem.
 
-The evidence now separates SGO into a relatively well-supported upstream component and an unresolved downstream component:
+The evidence separates SGO into a relatively well-supported upstream component and an unresolved downstream component:
 
 ```text
 binding subset-update budget
@@ -14,33 +14,27 @@ binding subset-update budget
     -> performance change whose expression depends on architecture/task/regime
 ```
 
-The upstream finite-budget dependence has passed **three preregistered n=30 Q-scaling experiments within the Digits/geometric family**: two MLP blocks and one SmallCNN block. In all three, the frozen low-Q versus high-Q benefit contrast is positive and significant, and the two methods become exactly identical when Q=K.
+The upstream finite-budget dependence has now passed four preregistered n=30 Q-scaling tests: two Digits/MLP blocks, one Digits/SmallCNN block, and one FashionMNIST/Tiny Transformer block. Exact Q=K model-state identity appears in all four. The three Digits tests are strong; the Fashion cross-task attenuation passes the preregistered one-sided rule but has a two-sided 95% interval that narrowly crosses zero, so it is **borderline cross-task support**, not universal confirmation.
 
-The downstream mediator remains unidentified. Raw hidden effective rank is coordinate-dependent and non-causal; channel-standardized effective rank failed a fresh quantitative mediator test. A later full-vs-clean dose interaction replicated within MLP but failed in SmallCNN, showing that the way SGO benefit appears in learned function space is not architecture-general.
+The downstream mediator remains unidentified. Raw hidden effective rank is coordinate-dependent and non-causal; channel-standardized effective rank failed a fresh quantitative mediator test. A full-vs-clean dose interaction replicated within MLP but failed in SmallCNN, showing that the functional expression of the trajectory change is architecture dependent.
 
-The shortest current claim is:
+Current claim:
 
-> **SGO is a finite-budget stochastic-environment subset-selection method. When only a subset of candidate environments can contribute to an update, retaining hard examples while reducing model-conditioned gradient redundancy can improve performance in tested structured regimes. This budget dependence is robust to the tested MLP/SmallCNN architecture change within Digits/geometric. The functionally meaningful downstream mediator remains open.**
+> **SGO is a finite-budget stochastic-environment subset-selection method. When only a subset of candidate environments can contribute to an update, retaining hard examples while reducing model-conditioned gradient redundancy can improve performance in tested structured regimes. The mechanism is strongly architecture-robust within Digits/geometric and receives preregistered but borderline cross-task support on FashionMNIST/Tiny Transformer. The functionally meaningful downstream mediator remains open.**
 
 ## 1. Seed is an environment index
 
-Let `s` index a stochastic environment `e_s`. The relevant chain is
+Let `s` index a stochastic environment `e_s`:
 
 ```text
 s -> e_s -> g(theta, B, e_s) -> optimization trajectory -> learned function -> held-out behavior
 ```
 
-with
-
-```text
-g(theta, B, e) = grad_theta L(theta; B, e).
-```
-
-SGO does not optimize integer seed values. It allocates finite update budget across model-conditioned stochastic environments.
+with `g(theta,B,e)=grad_theta L(theta;B,e)`. SGO does not optimize integer seed values; it allocates finite update budget across model-conditioned stochastic environments.
 
 ## 2. Finite-budget selection problem
 
-Suppose each step exposes `K` candidate environments but only `Q < K` can contribute to the backward update. Loss-hard selection spends this budget on the highest-current-loss candidates. Gradient-novel selection keeps a hard anchor while preferring additional hard candidates whose gradient signatures are less redundant with those already selected.
+Suppose each step exposes K candidate environments but only Q<K can contribute. Loss-hard spends this budget on highest-current-loss candidates. Gradient-novel keeps a hard anchor while preferring additional hard candidates whose gradient signatures are less redundant with already selected directions.
 
 An idealized quantity is residual energy outside the selected gradient span:
 
@@ -48,125 +42,95 @@ An idealized quantity is residual energy outside the selected gradient span:
 novelty(e | S) = ||g_e - P_S g_e||^2 / (||g_e||^2 + eps).
 ```
 
-The implementation uses cheaper final-layer cosine/signature proxies. Its role is approximately
-
-```text
-error relevance × directional non-redundancy.
-```
-
-Hardness reduces allocation to arbitrary unusual directions; novelty reduces repeated spending on nearly identical corrections.
+The implementation uses cheaper final-layer cosine/signature proxies. Their intended role is approximately `error relevance × directional non-redundancy`.
 
 ## 3. Direct Q-scaling evidence
 
-All three confirmatory tests used `K=16`, Q=`{2,4,8,12,16}`, paired methods and fixed low-vs-high contrast
+### Digits/geometric, MLP #1
 
-```text
-A_B = mean(B_Q2, B_Q4) - mean(B_Q12, B_Q16),
-```
+K=16; Q={2,4,8,12,16}. Per-Q heldout mean benefit: `+2.151,+2.590,+2.076,+0.673,0.000` pp.
 
-where `B_Q` is gradnov minus loss-hard held-out mean performance.
-
-### MLP audit 1
-
-Per-Q benefit: `+2.151, +2.590, +2.076, +0.673, 0.000` pp.
-
-- attenuation: **+2.034 pp**;
+- frozen low-minus-high attenuation: **+2.034 pp**;
 - one-sided p: **1.06e-7**;
-- Q=16: exact scientific identity in 30/30 pairs.
+- Q=16: exact identity in 30/30 pairs.
 
-### MLP audit 2, fresh block
+### Digits/geometric, MLP #2 fresh
 
-Per-Q benefit: `+2.613, +2.443, +2.156, +0.885, 0.000` pp.
+Per-Q benefit: `+2.613,+2.443,+2.156,+0.885,0.000` pp.
 
 - attenuation: **+2.086 pp**;
 - one-sided p: **5.16e-7**;
-- Q=16: exact scientific identity in 30/30 pairs.
+- Q=16: exact identity in 30/30 pairs.
 
-### SmallCNN audit, fresh block
+### Digits/geometric, SmallCNN
 
-Per-Q benefit: `+2.034, +2.073, +1.195, +1.578, 0.000` pp.
+Per-Q benefit: `+2.034,+2.073,+1.195,+1.578,0.000` pp.
 
 - attenuation: **+1.265 pp**;
-- paired SE: `0.392 pp`;
 - 95% t29 interval: **+0.463 to +2.067 pp**;
 - one-sided p: **0.001548**;
-- Q=16: zero mismatches in state digests, parameter tensors, training diagnostics and evaluation metrics.
+- Q=16: exact state-tensor, diagnostic and evaluation identity in 30/30 pairs.
 
-The SmallCNN curve is not strictly monotone because Q=12 exceeds Q=8. Therefore the evidence supports the preregistered low-vs-high contrast and exact Q=K disappearance, **not a universal monotone Q law**.
+This extends the finite-budget effect across an architecture change within Digits/geometric.
 
-Selected pairwise-gradient novelty in the SmallCNN audit decreased from `+0.3095` at Q=2 to `+0.02325` at Q=12 and became exactly zero at Q=16.
+### FashionMNIST, Tiny Transformer
 
-### Interpretation
+K=8; Q={2,4,6,8}. Per-Q heldout mean benefit: `+0.846,+0.026,+0.245,0.000` pp.
 
-The strongest direct mechanism statement is:
+Frozen statistic:
 
-> **The selector advantage requires subset-selection freedom. When every K candidate contributes, selector choice has no remaining degree of freedom and the learned model itself becomes identical. Across the tested MLP and SmallCNN parameterizations, relaxing the subset constraint reduces the frozen low-vs-high advantage.**
+```text
+A_B = mean(B_Q2,B_Q4) - mean(B_Q6,B_Q8).
+```
 
-This is architecture robustness **within one dataset/generator family**, not cross-dataset universality.
+- low-Q mean benefit: **+0.436 pp**;
+- high-Q mean benefit: **+0.123 pp**;
+- attenuation: **+0.314 pp**;
+- paired SE: **0.157 pp**;
+- two-sided 95% t29 interval: **-0.0065 to +0.6340 pp**;
+- preregistered one-sided p: **0.027264**;
+- Q=8: exact state-tensor, diagnostic and evaluation identity in 30/30 pairs.
+
+This is the first direct Q-scaling support outside Digits. It is weaker than the Digits evidence because the two-sided interval narrowly includes zero and the pattern is irregular: Q6 exceeds Q4.
+
+### Common manipulation pattern
+
+Selected pairwise-gradient novelty differences shrink toward Q=K:
+
+- SmallCNN/Digits: +0.3095, +0.1475, +0.0546, +0.02325, 0;
+- Fashion/Tiny Transformer: +0.1618, +0.0476, +0.0243, 0.
+
+The Q response is not universally monotonic in performance. The robust common structure is instead:
+
+1. selector freedom exists only while Q<K;
+2. non-redundancy manipulation contracts as coverage increases;
+3. when Q=K, both methods become the same update rule and the learned state becomes exactly identical;
+4. the preregistered low-vs-high benefit contrast is positive in all four completed blocks, with differing strength.
 
 ## 4. Why immediate descent and mean-gradient estimation are insufficient
 
-Loss-hard can produce a larger immediate one-step loss decrease, and gradient novelty did not outperform random sampling as a mean-gradient estimator in the mechanism audit.
+Loss-hard can produce larger immediate one-step loss decrease, and gradient novelty did not outperform random sampling as a mean-gradient estimator in the mechanism audit. If several hard environments induce nearly the same correction, spending multiple update slots on them can be locally sensible while covering little new unresolved structure.
 
-If several hard environments induce nearly the same correction,
+Thus SGO can trade local greediness for broader finite-budget coverage. The theory is not “maximize gradient diversity.” Pure diversity without hardness is weak, and larger accumulated gradient effective rank is not sufficient.
 
-```text
-g_1 ~= g_2 ~= g_3,
-```
+## 5. Representation rank: marker, not mediator
 
-then allocating multiple backward contributions to them can be locally reasonable while covering little new unresolved directional structure. SGO can trade some local greediness for broader finite-budget coverage.
+Raw hidden representation effective rank has a strong fixed-parameterization condition-average predictive record, but direct interventions narrow its interpretation:
 
-## 5. Diversity alone is not the law
+1. raw-rank attenuation failed the first frozen budget mediator threshold;
+2. function-preserving positive diagonal reparameterization moved raw rank strongly while logits/predictions/metrics remained identical;
+3. raw rank is therefore coordinate-dependent and not an intrinsic causal state variable;
+4. channel-standardized rank removed that scaling freedom but failed the fresh budget-coupling test (`p=0.5063`).
 
-The stronger rule
+The mediator search should not continue by inventing post-hoc rank normalizations.
 
-```text
-more gradient diversity/rank -> more benefit
-```
+## 6. Downstream conversion is architecture dependent
 
-is false. Breast-high is a direct counterexample, and pure diversity without a hard anchor is weak. Useful novelty must remain task-relevant and must alter the learned function productively.
+MLP reserve-image testing found full geometric benefit +2.274 pp and full-minus-clean interaction +2.906 pp (`p=0.001726`). SmallCNN then found full benefit +2.417 pp but clean benefit +3.436 pp and full-minus-clean interaction -1.019 pp (`p=0.792`).
 
-Thus the theory is not “maximize diversity.” It is **budgeted allocation of hard, non-redundant corrections**.
+Therefore the upstream finite-budget effect can survive architecture/task changes while the **functional expression** of that trajectory difference changes. A universal `stronger shift -> larger SGO benefit` law is rejected.
 
-## 6. Representation rank: marker, not mediator
-
-Raw hidden representation effective rank has a strong prospective fixed-parameterization condition-average directional record. That empirical record remains useful as a marker.
-
-But direct mechanism tests narrow its meaning:
-
-1. raw-rank attenuation failed the first frozen Q-scaling mediator threshold (`p=0.1095`);
-2. a positive diagonal function-preserving reparameterization moved raw rank by roughly +2 to -6 while logits, predictions and metrics were unchanged;
-3. therefore raw rank is coordinate-dependent and cannot itself be an intrinsic causal state variable;
-4. channel-standardized rank removed that trivial scaling freedom but failed the fresh budget-coupling test (`p=0.5063`).
-
-The next mediator search should not be another post-hoc rank normalization.
-
-## 7. Downstream conversion is architecture dependent
-
-A fixed-dose MLP experiment found a strong full-strength geometric benefit. Its initial full-minus-clean interaction was borderline, then replicated on a disjoint 364-image reserve subset:
-
-- MLP reserve full benefit: `+2.274 pp`;
-- full-minus-clean interaction: `+2.906 pp`, p=`0.001726`.
-
-However, a preregistered SmallCNN replication found:
-
-- full benefit: `+2.417 pp`, p=`2.34e-5`;
-- clean benefit: `+3.436 pp`;
-- full-minus-clean interaction: `-1.019 pp`, p=`0.792`.
-
-Therefore the upstream finite-budget effect can survive an architecture change while the **functional expression of that trajectory change does not**.
-
-This rejects a universal rule such as
-
-```text
-stronger shift -> larger SGO benefit.
-```
-
-It also weakens any simple claim that reusable-factor conversion has already been identified.
-
-## 8. Current causal picture
-
-The evidence currently supports:
+## 7. Current causal picture
 
 ```text
 binding subset budget
@@ -176,48 +140,24 @@ binding subset budget
     -> architecture/task-dependent performance expression
 ```
 
-The open object is the map from trajectory coverage to a **functionally meaningful learned change**.
+The open object is the map from coverage to a functionally meaningful learned change. A viable mediator should be invariant to trivial function-preserving reparameterizations, preferably training-only and prospective, coupled to the budget effect, and stable across materially different tasks.
 
-A viable mediator should ideally be:
+## 8. Predicted help/failure regimes
 
-- invariant to trivial function-preserving reparameterizations;
-- measurable from training-only information before held-out construction;
-- coupled to the finite-budget effect;
-- prospective rather than fitted to final held-out outcomes;
-- stable across materially different tasks/architectures.
+SGO should be most useful when Q is materially smaller than K, candidate gradients contain task-relevant non-redundant corrections, the model can exploit those corrections under the available training budget, and novelty does not displace necessary hard examples.
 
-## 9. Predicted help/failure regimes
+Weak/null effects are expected as Q approaches K, when gradients are already redundant, when novelty is dominated by nuisance/noise, or when the downstream function-space change is not useful for the target metric.
 
-SGO should be most useful when:
+At Q=K, exact method identity has now been observed in **all four** preregistered Q-scaling blocks, including FashionMNIST/Tiny Transformer.
 
-- Q is materially smaller than K;
-- candidate gradients contain non-redundant task-relevant corrections;
-- the model can use those corrections under the available training budget;
-- novelty does not displace necessary hard examples.
+## 9. Highest-value next falsification
 
-Weak/null effects are expected when:
+The next decisive budget test is **CIFAR-10 / ResNet-20 Q-scaling** under the existing primary CIFAR protocol. It would test the same finite-budget logic on a larger convolutional task where a small corrected-significant Q=4 mean benefit already exists.
 
-- Q approaches K;
-- candidate gradients are already redundant;
-- novelty is dominated by nuisance/noise;
-- selected directions conflict rather than complement one another;
-- the target metric depends on a downstream functional regime where the trajectory difference is not beneficial.
+The CIFAR experiment should preregister K/Q values, low-vs-high contrast, optimizer, candidate/heldout generators, exact Q=K identity fields, replicate count and hardware/runtime constraints before outcomes.
 
-At Q=K=16, exact method identity has now been observed in all **three** preregistered Q-scaling blocks.
-
-## 10. Highest-value next falsification
-
-A fourth Digits Q-scaling replication would add little. The next decisive test is **cross-task budget scaling** using the same frozen low-vs-high contrast and Q=K identity logic on a materially different task/architecture.
-
-Priority candidates:
-
-1. FashionMNIST Transformer, where prior SGO/rank experiments already define a stable training protocol;
-2. CIFAR-10 / ResNet-20, where a small corrected-significant mean benefit already exists but compute cost is higher.
-
-The protocol must be fixed before outcomes, including K/Q values, optimizer, environment generator, held-out construction and the exact attenuation statistic.
-
-Separately, training-only function-space diagnostics should target the unresolved downstream mediator rather than continuing proxy-rank search.
+Separately, the downstream mediator should be attacked with prospective training-only function-space diagnostics rather than additional rank proxies.
 
 ## Working claim
 
-> **Under a binding finite update budget, selecting stochastic environments that are both currently hard and non-redundant in model-conditioned gradient space can improve performance in tested structured regimes. The finite-budget dependence has now replicated in two MLP blocks and a SmallCNN block within Digits/geometric, with exact identity whenever Q=K. This supports an architecture-robust subset-allocation mechanism within that family. It does not establish cross-dataset universality, a monotone Q law, or the downstream function-space mediator.**
+> **Under a binding finite update budget, selecting stochastic environments that are both currently hard and non-redundant in model-conditioned gradient space can improve performance in tested structured regimes. The finite-budget dependence is strongly replicated across MLP and SmallCNN within Digits/geometric and receives preregistered but borderline cross-task support on FashionMNIST/Tiny Transformer. Exact Q=K identity across all four blocks supports selector freedom as a necessary component of the observed advantage. This does not establish universal task validity, a monotone Q law, or the downstream function-space mediator.**
