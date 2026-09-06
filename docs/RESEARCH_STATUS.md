@@ -7,63 +7,78 @@ Updated 2026-09-06. A finding is **supported** only within its comparison, task 
 | Experiment | Frozen decision | Evidence and scope |
 |---|---|---|
 | Dual-evaluation transfer specificity, #59, 30 pairs | **NO SHARED REPLICATION** | Shared benefit +0.78165 pp, one-sided p0.099776; specificity +0.00674 pp, p0.425828. Difficulty matched, but selected mixtures were near clean. |
-| Fixed-dose functional-response audit, #61, fresh 30 pairs | **DOSE-DEPENDENT BENEFIT PASS** | Full geometric benefit +2.84223 pp, 95% CI [2.23536,3.44910]; full-minus-clean +1.62125 pp, 95% CI [-0.31784,3.56035], one-sided p0.048974. Interaction is borderline. |
+| Fixed-dose MLP audit, #61, 30 pairs | **DOSE-DEPENDENT BENEFIT PASS** | Full benefit +2.84223 pp; full-minus-clean +1.62125 pp, one-sided p0.048974. Interaction was borderline. |
+| Reserve-image MLP replication, #64, 30 pairs | **DOSE-DEPENDENT BENEFIT REPLICATES ON RESERVE IMAGES** | On the disjoint 364-image reserve subset, full benefit +2.27370 pp (p1.75e-8) and full-minus-clean +2.90556 pp (p0.001726). Intermediate strengths were negative, so no monotone dose law. |
+| SmallCNN regime audit, #67, 30 pairs | **CNN FULL EFFECT REPLICATES / CLEAN INTERACTION DOES NOT** | Full benefit +2.41698 pp (p2.34e-5), but clean benefit +3.43634 pp and full-minus-clean -1.01937 pp (p0.792). Full-specific interaction is not architecture-general. |
+| SmallCNN Q-scaling, #70, 30 pairs | **CNN FINITE-BUDGET COVERAGE REPLICATES** | Low-Q minus high-Q benefit attenuation +1.26494 pp, 95% CI [+0.46325,+2.06663], p0.001548; Q=16 gives exact model-state and metric identity. |
 
-The new audit does not overturn #59. It changes the evaluation question to a fixed-dose profile with clean and full-strength endpoints. No new calibration was used. The same trained states were evaluated across strengths; all 60 checkpoint hashes and 38,460 environment-level rows were verified. It is not a difficulty-matched specificity or causal-mediation experiment. Intermediate-dose benefits were not monotone.
+The full-strength positive effect now survives MLP and SmallCNN. However, the MLP's full-vs-clean interaction does not survive SmallCNN, so `stronger shift -> larger SGO benefit` is not a universal mechanism law.
 
-See [DUAL_TRANSFER_RESULT.md](DUAL_TRANSFER_RESULT.md) and [FIXED_DOSE_RESPONSE.md](FIXED_DOSE_RESPONSE.md) for the protocol, complete primary statistics, artifact IDs, runtime conditions and interpretation boundaries.
+The stronger cross-architecture result is upstream: **finite-budget subset allocation**. See [CNN_BUDGET_SCALING_RESULT.md](CNN_BUDGET_SCALING_RESULT.md), [RESERVE_DOSE_REPLICATION.md](RESERVE_DOSE_REPLICATION.md), [CNN_REGIME_INTERACTION_RESULT.md](CNN_REGIME_INTERACTION_RESULT.md), [DUAL_TRANSFER_RESULT.md](DUAL_TRANSFER_RESULT.md), and [FIXED_DOSE_RESPONSE.md](FIXED_DOSE_RESPONSE.md).
 
 ## Established results within tested regimes
 
 | Topic | Evidence | Current conclusion |
 |---|---|---|
-| Structured Digits geometric shifts | Paired MLP experiments | Hardness plus gradient novelty can improve held-out mean/tail metrics over loss-hard |
+| Structured Digits geometric shifts | Paired MLP and SmallCNN experiments | Hardness plus gradient novelty can improve held-out mean performance over loss-hard under tested structured shifts |
 | Model-conditioned diversity | Gradient novelty versus transformation-parameter novelty | Model-conditioned signatures contain useful information beyond physical parameter distances in the tested MLP |
-| CNN replication | 20 paired runs | Mean and minimum gains versus loss-hard survive Holm correction |
+| CNN replication | Original 20 pairs plus fresh fixed-dose/Q-scaling blocks | Positive full-strength mean effects survive the tested SmallCNN parameterization |
 | Optimizer replication | Independently tuned AdamW and SGD+momentum | Effect is not explained by AdamW alone in the tested MLP |
 | RNG candidate compression | Prefix/compression sweeps | Moderate prefiltering can reduce signature evaluations; aggressive compression loses tail coverage |
 | Learned RNG relevance | Original and shifted-coordinate generators | Relevant RNG coordinates can be learned using training gradients; stale fingerprint transfer fails |
-| Soft relevance | Cross-generator weighted-top12 control | Soft weighting is more robust than forcing an exact hard set in the tested generator |
 | Relative redundancy | Digits and independent synthetic task | Within-step normalization transfers better than fixed absolute cosine targets, without a safety guarantee |
 | CIFAR-10 / ResNet-20 primary | 40 paired runs | Mean +0.1206 pp, Holm(5) p0.01336; CIFAR tail robustness remains unconfirmed |
 | Gradient mechanism audit | Mean-gradient and one-step controls | Final gains are not explained by superior mean-gradient estimation or maximal immediate loss decrease alone |
-| Finite-budget Q-scaling | Two preregistered n=30 blocks | Frozen attenuation +2.034 pp (p1.06e-7) then +2.086 pp (p5.16e-7); exact method identity when all candidates contribute |
+| Finite-budget Q-scaling | Three preregistered n=30 blocks: MLP, fresh MLP, SmallCNN | Low-vs-high attenuation +2.034 pp (p1.06e-7), +2.086 pp (p5.16e-7), then +1.265 pp (p0.00155); exact method/model identity when Q=K in all three |
 | Function-preserving rank intervention | 20 reps, two methods | Raw hidden rank changes without changing the learned function; raw rank is not intrinsic causal evidence |
 
-Primary detailed evidence remains in [RESULTS.md](RESULTS.md) and the individual experiment documents. The budget findings support the importance of subset allocation within Digits/geometric conditions; they do not identify a unique causal coverage mechanism.
+Thus the best-supported mechanism statement is now:
+
+```text
+binding subset-update budget
+    + hard, model-conditioned non-redundant candidate gradients
+    -> different optimization trajectory / learned function
+    -> performance benefit in tested regimes.
+```
+
+The **finite-budget dependence is architecture-robust within the Digits/geometric family**. The downstream map from trajectory change to clean versus shifted performance is architecture/optimization dependent and remains unidentified.
 
 ## Raw-rank predictor versus mediator
 
 The recorded prospective raw-rank direction rule matched nine registered condition-level tests across six datasets: Digits (three generators), Wine, Iris, Diabetes regression, FashionMNIST (Tiny and Medium Transformer) and CIFAR-10. These are not nine independent datasets or independent Bernoulli trials. The record is a fixed-parameterization condition-average marker, not a calibrated per-run gate.
 
-FashionMNIST/Tiny Transformer had initial n=10 PASS and independent n=20 directional replication: rank +0.07853 and held-out mean +0.4377 pp. The combined n=30 estimate is secondary precision analysis. FashionMNIST/Medium Transformer n=10 gave raw rank +0.10293 and mean +0.9579 pp. CIFAR/ResNet independent reps40-49 gave raw rank +0.03205 and mean +0.1703 pp; rank's descriptive p0.1464 does not show significant rank expansion.
-
-Function-preserving intervention changed raw effective rank while predictions stayed identical. Channel-standardized rank did not rescue the mediator theory: in fresh #38, benefit attenuation replicated but standardized-rank attenuation was -0.00271, one-sided p0.5063, yielding **COVERAGE REPLICATION ONLY**. Raw rank was secondary and had attenuation +0.1780, p0.0180. The first Q-scaling raw-rank mediator threshold also failed (p0.1095).
+Function-preserving intervention changed raw effective rank while predictions stayed identical. Channel-standardized rank did not rescue the mediator theory: in fresh #38, benefit attenuation replicated but standardized-rank attenuation was -0.00271, one-sided p0.5063, yielding **COVERAGE REPLICATION ONLY**. Raw rank remains a trajectory marker, not a causal quantity.
 
 See [THEORETICAL_FRAMEWORK.md](THEORETICAL_FRAMEWORK.md), [FUNCTION_PRESERVING_RANK_INTERVENTION.md](FUNCTION_PRESERVING_RANK_INTERVENTION.md), [STANDARDIZED_RANK_BUDGET_RESULT.md](STANDARDIZED_RANK_BUDGET_RESULT.md) and [PROSPECTIVE_REPRESENTATION_RANK.md](PROSPECTIVE_REPRESENTATION_RANK.md).
 
-## Negative results and failed mechanism designs
+## Negative results and mechanism boundaries
 
 More candidate seeds are not monotonically better; worst-only selection can damage mean/clean performance; pure diversity without hardness is weak. Full-network gradient signatures did not beat the cheaper head proxy in the tested MLP. Learned selectors/fingerprints do not transfer universally, and long irrelevant RNG fingerprints can hurt. Absolute cosine targets can be infeasible on another task. Relative control is not a task-level safety guarantee.
 
-Gradient novelty did not outperform random sampling as a mean-gradient estimator; loss-hard can produce larger one-step decrease. Higher accumulated gradient effective rank is insufficient (Breast-high counterexample). The representation-rank-SD tail rule failed on Wine and remains retired. Raw-rank signs are unreliable per replicate. Optimizer under-tuning can create a false selector failure.
+Gradient novelty did not outperform random sampling as a mean-gradient estimator; loss-hard can produce larger one-step decrease. Higher accumulated gradient effective rank is insufficient. Raw representation rank is coordinate-dependent and non-causal; standardized rank failed the fresh mediator-coupling test.
 
-The structured-versus-IID-nuisance test #41 failed its matching prerequisites, so its large held-out contrast remained **INCONCLUSIVE**. Gated high-dimensional nuisance #44, two-axis #47 and common-contrast #50 all failed training-only calibration. Those gates prevented confirmatory evaluation. Evaluation-only nuisance difficulty calibrations #53/#56 also failed; #59 eventually matched difficulty near the clean-input limit but returned the negative result above. These attempts have not identified a reusable-factor causal mediator.
+The structured-versus-nuisance matching program (#41/#44/#47/#50/#53/#56) repeatedly failed calibration or support overlap. #59 eventually matched near the clean limit but returned **NO SHARED REPLICATION**. These attempts have not identified reusable-factor causality.
 
-CIFAR primary p10/minimum differences were positive but Holm p0.05294/0.08815; they are not confirmed tail benefits. A null significance result is not exact-zero evidence.
+The MLP full-minus-clean effect replicated on reserve images, but SmallCNN directly failed that interaction while retaining a positive full effect. Therefore a universal shift-strength/dose conversion law is rejected. Q curves are also not strictly monotone: in the fresh SmallCNN Q-scaling block Q=12 benefit exceeded Q=8. The supported budget claim is the preregistered low-vs-high attenuation plus exact Q=K identity.
+
+CIFAR primary p10/minimum differences were positive but Holm p0.05294/0.08815; they are not confirmed tail benefits.
 
 ## Execution and statistical uncertainty
 
-The CIFAR single-thread hosted-CPU audit returned **DRIFT PERSISTS**: max rank drift0.427255 and accuracy drift0.014667, with positive aggregate directions in both repeats. Rep45 was bitwise equal across AMD EPYC7763/9V74; rep46 differed across AMD EPYC7763/Intel Xeon6973P-C. Hardware-dependent numerical paths are a candidate cause, not an isolated sole cause. See [CIFAR_CPU_REPRO_AUDIT.md](CIFAR_CPU_REPRO_AUDIT.md).
+The CIFAR single-thread hosted-CPU audit returned **DRIFT PERSISTS**: max rank drift0.427255 and accuracy drift0.014667. Hardware-dependent numerical paths remain a candidate cause, not an isolated sole cause.
 
-The latest fixed-dose run used Python3.12.14, PyTorch2.10.0+cpu and pinned scientific dependencies, one thread and deterministic algorithms. CPU families still varied across shards; methods within each pair ran on the same runner. All states were retained and source/checkpoint hashes audited. No controlled-clock, GPU-efficiency or bitwise cross-hardware claim is made.
+The SmallCNN Q-scaling run used Python3.12, PyTorch2.10.0+cpu, one thread and deterministic algorithms. Hosted shards used AMD EPYC7763, AMD EPYC9V74 and Intel Xeon Platinum8573C. All scientific comparisons are paired within replicate; no speed or cross-hardware bitwise claim is made.
 
-The 30 training pairs—not the environments—are the statistical replicate units. Confidence intervals use paired SE and t29 multiplier2.04523. They are conditional on the fixed images and environment samples, not combined uncertainty across datasets/hardware. The reused Digits split contains 988 training/445 test examples. New seed IDs are not new image data. Earlier loss-hard-only evaluation calibration reused test-image labels and was not training-only validation.
+For Issue #70, all six artifact ZIP digests matched GitHub metadata; 300/300 checkpoint file hashes and 300/300 canonical state-tensor digests matched; all Q=16 parameter tensors were bitwise equal between methods; 24,000 environment rows independently reproduced aggregate heldout metrics to maximum numerical error 1.11e-16.
+
+The training pairs—not heldout environments—are the statistical replicate units. Confidence intervals quantify run-to-run uncertainty conditional on the fixed Digits images/environment samples, not combined uncertainty across datasets or hardware.
 
 ## Current open work and public wording
 
-The causal internal mediator remains unidentified. The current evidence supports gradient-aware environment selection in some structured finite-budget regimes and a replicated full-strength effect, with only tentative evidence for the latest full-minus-clean interaction.
+Safe current wording:
 
-Next statistical priority: independently challenge that borderline interaction at fixed strengths. Next mechanistic priority: intervene on reusable structure without confounding it with difficulty, margins or other function-space changes. Do not keep extending the present sample or selecting strengths until significance appears.
+> Gradient-aware selection of stochastic training environments can improve held-out mean performance in some structured regimes. Three preregistered n=30 Q-scaling experiments within the Digits/geometric family—two MLP blocks and one SmallCNN block—support a finite-budget subset-allocation explanation: the advantage is larger in the frozen low-Q versus high-Q contrast and becomes exactly zero when all K candidates contribute. This establishes architecture robustness within that family, not cross-dataset universality. The downstream function-space mediator remains unidentified.
 
-Other priorities remain materially different tasks/modalities, early-trajectory training-only diagnostics, a new tail-safety theory, pinned-hardware numerical studies, and GPU comparisons with truly matched costs. Do not claim universal seed quality, a universal controller, causal rank law, reliable per-run gating, confirmed CIFAR tail robustness, general large-Transformer validity, or GPU efficiency.
+The highest-value next falsification is **not another Digits replication**. Repeat the frozen Q-scaling contrast on a materially different task/architecture where the environment generator and compute budget can be held fixed cleanly. FashionMNIST/Transformer or CIFAR/ResNet are candidates, with protocol choices fixed before outcomes.
+
+Other priorities: early-trajectory training-only diagnostics, a new tail-safety theory, pinned-hardware numerical studies, and GPU comparisons with genuinely matched costs. Do not claim universal seed quality, a universal controller, causal rank law, a universal monotone Q curve, reliable per-run gating, confirmed CIFAR tail robustness, general large-Transformer validity, or GPU efficiency.
