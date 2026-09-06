@@ -1,0 +1,149 @@
+name: CIFAR-10 ResNet finite-budget Q-scaling
+
+on:
+  pull_request:
+    types: [opened, reopened]
+    branches: [main]
+    paths:
+      - 'experiments/cifar_resnet_budget_scaling.py'
+      - 'experiments/summarize_cifar_resnet_budget_scaling.py'
+      - '.github/workflows/cifar_resnet_budget_scaling.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  OMP_NUM_THREADS: '4'
+  MKL_NUM_THREADS: '4'
+  OPENBLAS_NUM_THREADS: '4'
+  NUMEXPR_NUM_THREADS: '4'
+
+jobs:
+  train:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    strategy:
+      fail-fast: false
+      max-parallel: 6
+      matrix:
+        include:
+          - {start: 50, end: 55}
+          - {start: 55, end: 60}
+          - {start: 60, end: 65}
+          - {start: 65, end: 70}
+          - {start: 70, end: 75}
+          - {start: 75, end: 80}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Install pinned CPU dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install torch==2.10.0 torchvision==0.25.0 --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install numpy==2.3.5 pandas==2.2.3 scipy==1.17.0 scikit-learn==1.8.0
+      - name: Download CIFAR-10 with bounded fallback
+        shell: bash
+        run: |
+          set -e
+          mkdir -p .cache/cifar10
+          if [ ! -f .cache/cifar10/cifar-10-batches-py/data_batch_1 ]; then
+            curl -L --fail --connect-timeout 10 --max-time 120 https://www.cs.toronto.edu/~kriz/cifar-10-python.tar.gz -o /tmp/cifar.tar.gz || \
+            curl -L --fail --connect-timeout 10 --max-time 120 'https://www.dropbox.com/scl/fi/6mhiq4rtfszqrosasp8a9/cifar-10-batches-py.tar.gz?rlkey=g6v114un4je233j52tu5tdsbe&st=gxo2e50q&dl=1' -o /tmp/cifar.tar.gz
+            tar -xzf /tmp/cifar.tar.gz -C .cache/cifar10
+          fi
+      - name: Protocol and Q8 selector self-test only
+        run: python experiments/cifar_resnet_budget_scaling.py selftest
+      - name: Pretrain once per rep; finetune all Q; seal states
+        run: python experiments/cifar_resnet_budget_scaling.py train --start ${{ matrix.start }} --end ${{ matrix.end }} --output-dir artifacts
+      - name: Archive source and dependency provenance
+        if: always()
+        run: |
+          mkdir -p artifacts/source
+          cp experiments/cifar_resnet_pilot.py experiments/cifar_resnet_finetune_pilot.py experiments/cifar_resnet_budget_scaling.py experiments/summarize_cifar_resnet_budget_scaling.py artifacts/source/
+          python -m pip freeze > artifacts/pip-freeze.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: cifar-budget-train-${{ matrix.start }}
+          path: artifacts/
+          if-no-files-found: error
+          retention-days: 90
+
+  evaluate:
+    needs: train
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    strategy:
+      fail-fast: false
+      max-parallel: 6
+      matrix:
+        include:
+          - {start: 50, end: 55}
+          - {start: 55, end: 60}
+          - {start: 60, end: 65}
+          - {start: 65, end: 70}
+          - {start: 70, end: 75}
+          - {start: 75, end: 80}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Install pinned CPU dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install torch==2.10.0 torchvision==0.25.0 --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install numpy==2.3.5 pandas==2.2.3 scipy==1.17.0 scikit-learn==1.8.0
+      - name: Download CIFAR-10 with bounded fallback
+        shell: bash
+        run: |
+          set -e
+          mkdir -p .cache/cifar10
+          if [ ! -f .cache/cifar10/cifar-10-batches-py/data_batch_1 ]; then
+            curl -L --fail --connect-timeout 10 --max-time 120 https://www.cs.toronto.edu/~kriz/cifar-10-python.tar.gz -o /tmp/cifar.tar.gz || \
+            curl -L --fail --connect-timeout 10 --max-time 120 'https://www.dropbox.com/scl/fi/6mhiq4rtfszqrosasp8a9/cifar-10-batches-py.tar.gz?rlkey=g6v114un4je233j52tu5tdsbe&st=gxo2e50q&dl=1' -o /tmp/cifar.tar.gz
+            tar -xzf /tmp/cifar.tar.gz -C .cache/cifar10
+          fi
+      - uses: actions/download-artifact@v4
+        with:
+          name: cifar-budget-train-${{ matrix.start }}
+          path: artifacts
+      - name: Verify all training seals; construct and evaluate fresh heldout
+        run: python experiments/cifar_resnet_budget_scaling.py evaluate --start ${{ matrix.start }} --end ${{ matrix.end }} --output-dir artifacts
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: cifar-budget-eval-${{ matrix.start }}
+          path: artifacts/
+          if-no-files-found: error
+          retention-days: 90
+
+  aggregate:
+    needs: evaluate
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install summarizer dependencies
+        run: python -m pip install numpy==2.3.5 pandas==2.2.3 scipy==1.17.0
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: cifar-budget-eval-*
+          path: downloaded
+          merge-multiple: false
+      - name: Apply frozen Issue 76 decision and Q8 identity check
+        run: python experiments/summarize_cifar_resnet_budget_scaling.py --input-dir downloaded --output-dir aggregate
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cifar-budget-aggregate30
+          path: aggregate/*.csv
+          if-no-files-found: error
+          retention-days: 90
