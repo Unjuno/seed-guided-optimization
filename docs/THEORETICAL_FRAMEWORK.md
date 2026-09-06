@@ -1,27 +1,26 @@
-# Theoretical framework: budgeted coverage of unresolved gradient subspaces
+# Theoretical framework: finite-budget coverage of unresolved gradient directions
 
 ## Status
 
-This document states the current **working theory**. It is not a theorem.
+This is a **working theory**, not a theorem.
 
-The evidence now separates the mechanism into a strongly supported outer component and an unresolved inner component:
+The evidence now separates SGO into a relatively well-supported upstream component and an unresolved downstream component:
 
 ```text
-binding subset budget
-    + hard, non-redundant environment-induced gradients
-    -> broader coverage of unresolved learning directions
-    -> trajectory / learned-function change
-    -> held-out mean benefit in reusable structured regimes
+binding subset-update budget
+    + hard, model-conditioned non-redundant candidate gradients
+    -> different coverage of unresolved learning directions
+    -> optimization trajectory / learned-function change
+    -> performance change whose expression depends on architecture/task/regime
 ```
 
-The **finite-budget coverage component has now passed two preregistered n=30 Q-scaling tests on fresh replicate/held-out blocks**. In contrast, two representation-rank mediator candidates have failed increasingly direct tests:
+The upstream finite-budget dependence has passed **three preregistered n=30 Q-scaling experiments within the Digits/geometric family**: two MLP blocks and one SmallCNN block. In all three, the frozen low-Q versus high-Q benefit contrast is positive and significant, and the two methods become exactly identical when Q=K.
 
-1. raw hidden effective rank failed the first frozen Q-scaling attenuation test and is coordinate-dependent under a function-preserving reparameterization;
-2. channel-standardized effective rank is invariant to that trivial rescaling, but failed the fresh preregistered Q-scaling mediator test.
+The downstream mediator remains unidentified. Raw hidden effective rank is coordinate-dependent and non-causal; channel-standardized effective rank failed a fresh quantitative mediator test. A later full-vs-clean dose interaction replicated within MLP but failed in SmallCNN, showing that the way SGO benefit appears in learned function space is not architecture-general.
 
-The shortest current claim is therefore:
+The shortest current claim is:
 
-> **SGO is a finite-budget stochastic-environment subset-selection method. When only a subset of candidate environments can contribute to an update, retaining hard examples while reducing model-conditioned gradient redundancy can improve held-out mean performance in tested structured regimes. The internal functionally meaningful mediator remains unidentified.**
+> **SGO is a finite-budget stochastic-environment subset-selection method. When only a subset of candidate environments can contribute to an update, retaining hard examples while reducing model-conditioned gradient redundancy can improve performance in tested structured regimes. This budget dependence is robust to the tested MLP/SmallCNN architecture change within Digits/geometric. The functionally meaningful downstream mediator remains open.**
 
 ## 1. Seed is an environment index
 
@@ -37,268 +36,188 @@ with
 g(theta, B, e) = grad_theta L(theta; B, e).
 ```
 
-SGO does not optimize integer seed values. It allocates finite learning budget across **model-conditioned stochastic environments**.
+SGO does not optimize integer seed values. It allocates finite update budget across model-conditioned stochastic environments.
 
 ## 2. Finite-budget selection problem
 
-Suppose each step exposes `K` candidate environments but only `Q < K` can contribute to the expensive backward update. Loss-hard selection prefers high current loss. Gradient-novel selection keeps a hard anchor while preferring additional candidates whose gradient signatures are less redundant with the already selected set.
+Suppose each step exposes `K` candidate environments but only `Q < K` can contribute to the backward update. Loss-hard selection spends this budget on the highest-current-loss candidates. Gradient-novel selection keeps a hard anchor while preferring additional hard candidates whose gradient signatures are less redundant with those already selected.
 
-An idealized novelty quantity is residual energy outside the selected gradient span:
+An idealized quantity is residual energy outside the selected gradient span:
 
 ```text
 novelty(e | S) = ||g_e - P_S g_e||^2 / (||g_e||^2 + eps).
 ```
 
-The implemented selector uses cheaper cosine/signature proxies. Its practical role is approximately
+The implementation uses cheaper final-layer cosine/signature proxies. Its role is approximately
 
 ```text
-error relevance x directional non-redundancy.
+error relevance × directional non-redundancy.
 ```
 
-Hardness limits wasted budget on arbitrary unusual directions; novelty limits repeated expenditure on nearly identical errors.
+Hardness reduces allocation to arbitrary unusual directions; novelty reduces repeated spending on nearly identical corrections.
 
-## 3. Replicated direct evidence for a binding-budget mechanism
+## 3. Direct Q-scaling evidence
 
-### First preregistered Q-scaling audit
+All three confirmatory tests used `K=16`, Q=`{2,4,8,12,16}`, paired methods and fixed low-vs-high contrast
 
-With `K=16`, Q=`{2,4,8,12,16}`, n=30 fresh pairs:
+```text
+A_B = mean(B_Q2, B_Q4) - mean(B_Q12, B_Q16),
+```
 
-| Q | gradnov - loss-hard held-out mean |
-|---:|---:|
-| 2 | +2.151 pp |
-| 4 | +2.590 pp |
-| 8 | +2.076 pp |
-| 12 | +0.673 pp |
-| 16 | 0.000 pp exactly |
+where `B_Q` is gradnov minus loss-hard held-out mean performance.
 
-Frozen low-Q minus high-Q attenuation:
+### MLP audit 1
 
-- `A_B = +2.034 pp`;
-- one-sided `p=1.06e-7`;
-- Q=16 scientific identity: exact in all 30 pairs.
+Per-Q benefit: `+2.151, +2.590, +2.076, +0.673, 0.000` pp.
 
-### Independent fresh Q-scaling replication
+- attenuation: **+2.034 pp**;
+- one-sided p: **1.06e-7**;
+- Q=16: exact scientific identity in 30/30 pairs.
 
-Issue #38 used fresh reps `300-329` and fresh held-out seeds `17000-17079` under the same K/Q/selector structure:
+### MLP audit 2, fresh block
 
-| Q | gradnov - loss-hard held-out mean |
-|---:|---:|
-| 2 | +2.613 pp |
-| 4 | +2.443 pp |
-| 8 | +2.156 pp |
-| 12 | +0.885 pp |
-| 16 | 0.000 pp exactly |
+Per-Q benefit: `+2.613, +2.443, +2.156, +0.885, 0.000` pp.
 
-Frozen attenuation:
+- attenuation: **+2.086 pp**;
+- one-sided p: **5.16e-7**;
+- Q=16: exact scientific identity in 30/30 pairs.
 
-- `A_B = +2.086 pp`;
-- SE `0.339 pp`;
-- approximate 95% interval `+1.393 to +2.778 pp`;
-- one-sided `p=5.16e-7`;
-- Q=16 exact scientific mismatches: `0`.
+### SmallCNN audit, fresh block
 
-Selected-gradient novelty again decayed toward zero with Q and became exactly zero at Q=16.
+Per-Q benefit: `+2.034, +2.073, +1.195, +1.578, 0.000` pp.
 
-The replicated conclusion is:
+- attenuation: **+1.265 pp**;
+- paired SE: `0.392 pp`;
+- 95% t29 interval: **+0.463 to +2.067 pp**;
+- one-sided p: **0.001548**;
+- Q=16: zero mismatches in state digests, parameter tensors, training diagnostics and evaluation metrics.
 
-> **The selector advantage depends strongly on subset-selection freedom. When the subset constraint disappears at Q=K, the two methods become exactly identical.**
+The SmallCNN curve is not strictly monotone because Q=12 exceeds Q=8. Therefore the evidence supports the preregistered low-vs-high contrast and exact Q=K disappearance, **not a universal monotone Q law**.
 
-This is currently the strongest direct mechanism evidence in the repository.
+Selected pairwise-gradient novelty in the SmallCNN audit decreased from `+0.3095` at Q=2 to `+0.02325` at Q=12 and became exactly zero at Q=16.
 
-## 4. Why local descent does not explain the effect
+### Interpretation
 
-Loss-hard can produce a larger immediate one-step loss decrease. Gradient novelty is therefore not best understood as a greedier optimizer of the next update.
+The strongest direct mechanism statement is:
 
-If multiple hard environments induce approximately the same correction,
+> **The selector advantage requires subset-selection freedom. When every K candidate contributes, selector choice has no remaining degree of freedom and the learned model itself becomes identical. Across the tested MLP and SmallCNN parameterizations, relaxing the subset constraint reduces the frozen low-vs-high advantage.**
+
+This is architecture robustness **within one dataset/generator family**, not cross-dataset universality.
+
+## 4. Why immediate descent and mean-gradient estimation are insufficient
+
+Loss-hard can produce a larger immediate one-step loss decrease, and gradient novelty did not outperform random sampling as a mean-gradient estimator in the mechanism audit.
+
+If several hard environments induce nearly the same correction,
 
 ```text
 g_1 ~= g_2 ~= g_3,
 ```
 
-then several backward contributions can consume budget while adding little new directional coverage. SGO instead trades some immediate descent magnitude for broader coverage of unresolved directions.
+then allocating multiple backward contributions to them can be locally reasonable while covering little new unresolved directional structure. SGO can trade some local greediness for broader finite-budget coverage.
 
-## 5. Latent-factor interpretation
-
-A useful approximation is
-
-```text
-g_e ~= sum_k a[e,k] v_k + eta_e,
-```
-
-where `v_k` are task-relevant correction directions, `a[e,k]` indicates which latent factors are active, and `eta_e` contains idiosyncratic/noisy components.
-
-When Q is small relative to K, loss-only selection can repeatedly spend budget on the same dominant direction. Hard-plus-novelty selection can cover a broader set of unresolved directions. If train and held-out environments reuse latent factors in different combinations, this can improve held-out mean behavior.
-
-This motivates the central abstraction:
-
-> **SGO is approximately a budgeted coverage problem over unresolved, task-relevant gradient subspaces.**
-
-The repository does not prove submodularity, global optimality, or a universal approximation guarantee.
-
-## 6. Gradient diversity is not sufficient
+## 5. Diversity alone is not the law
 
 The stronger rule
 
 ```text
-more gradient effective rank -> more held-out benefit
+more gradient diversity/rank -> more benefit
 ```
 
-is false. Breast-high is a direct counterexample: accumulated gradient effective rank increased strongly while held-out mean did not improve.
+is false. Breast-high is a direct counterexample, and pure diversity without a hard anchor is weak. Useful novelty must remain task-relevant and must alter the learned function productively.
 
-Thus useful selection is not generic diversity maximization. Directional novelty must remain task-relevant and must affect the learned function in a reusable way.
+Thus the theory is not “maximize diversity.” It is **budgeted allocation of hard, non-redundant corrections**.
 
-## 7. Raw representation effective rank: predictive marker, not causal quantity
+## 6. Representation rank: marker, not mediator
 
-Across separate prospective conditions, the frozen fixed-parameterization rule
+Raw hidden representation effective rank has a strong prospective fixed-parameterization condition-average directional record. That empirical record remains useful as a marker.
+
+But direct mechanism tests narrow its meaning:
+
+1. raw-rank attenuation failed the first frozen Q-scaling mediator threshold (`p=0.1095`);
+2. a positive diagonal function-preserving reparameterization moved raw rank by roughly +2 to -6 while logits, predictions and metrics were unchanged;
+3. therefore raw rank is coordinate-dependent and cannot itself be an intrinsic causal state variable;
+4. channel-standardized rank removed that trivial scaling freedom but failed the fresh budget-coupling test (`p=0.5063`).
+
+The next mediator search should not be another post-hoc rank normalization.
+
+## 7. Downstream conversion is architecture dependent
+
+A fixed-dose MLP experiment found a strong full-strength geometric benefit. Its initial full-minus-clean interaction was borderline, then replicated on a disjoint 364-image reserve subset:
+
+- MLP reserve full benefit: `+2.274 pp`;
+- full-minus-clean interaction: `+2.906 pp`, p=`0.001726`.
+
+However, a preregistered SmallCNN replication found:
+
+- full benefit: `+2.417 pp`, p=`2.34e-5`;
+- clean benefit: `+3.436 pp`;
+- full-minus-clean interaction: `-1.019 pp`, p=`0.792`.
+
+Therefore the upstream finite-budget effect can survive an architecture change while the **functional expression of that trajectory change does not**.
+
+This rejects a universal rule such as
 
 ```text
-sign(delta raw hidden effective rank)
-    -> sign(delta condition-average held-out mean benefit)
+stronger shift -> larger SGO benefit.
 ```
 
-has repeatedly matched, including FashionMNIST Transformers and CIFAR/ResNet. This empirical record remains valid within its registered protocols.
+It also weakens any simple claim that reusable-factor conversion has already been identified.
 
-However three later results sharply limit interpretation.
-
-### 7.1 First Q-scaling mediator test
-
-Benefit attenuation passed strongly, but raw-rank attenuation did not pass its frozen threshold (`+0.0735`, one-sided `p=0.1095`).
-
-### 7.2 Function-preserving intervention
-
-For the one-hidden-layer MLP, positive diagonal reparameterization
-
-```text
-A' = D A
-b' = D b
-W' = W D^-1
-```
-
-preserves the represented function while rescaling hidden coordinates.
-
-Issue #35 changed raw effective rank by about `+2.1 to +2.3` under a spread intervention and `-5.8 to -6.1` under a concentration intervention, yet across all 80 intervention rows:
-
-- predicted classes were exactly unchanged;
-- all five held-out/clean accuracy metrics were exactly unchanged;
-- maximum observed logit difference was `0.0`.
-
-Therefore raw hidden effective rank is **coordinate-dependent and cannot itself be a functionally intrinsic causal quantity**.
-
-### 7.3 Fresh Q-scaling replication
-
-Raw rank was preregistered as secondary only. Its attenuation was nevertheless positive again (`+0.1780`, one-sided `p=0.0180`).
-
-This is consistent with raw rank being a repeatable **trajectory marker under a fixed parameterization**, not a causal state variable.
-
-## 8. Channel-standardized effective rank: scale-invariant but not the mediator
-
-Issue #35 found that independently z-scaling nonconstant hidden channels before SVD made effective rank exactly invariant to the positive diagonal intervention.
-
-Issue #38 therefore preregistered channel-standardized effective rank as a new mediator candidate in a fresh Q-scaling replication.
-
-Mean gradnov-minus-loss-hard standardized-rank differences were:
-
-| Q | standardized-rank delta |
-|---:|---:|
-| 2 | -0.0006 |
-| 4 | +0.0815 |
-| 8 | +0.0850 |
-| 12 | +0.0863 |
-| 16 | 0.0000 |
-
-Frozen low-minus-high attenuation:
-
-- `A_Z = -0.00271`;
-- SE `0.1695`;
-- approximate 95% interval `-0.3493 to +0.3439`;
-- one-sided `p=0.5063`;
-- standardized-mediator decision: **FAIL**.
-
-Benefit attenuation in the same fresh run was strongly positive. Therefore removing trivial channel-scale dependence does **not** rescue effective rank as the quantitative mediator of the budget effect.
-
-The next mechanism search should not simply invent another rank normalization.
-
-## 9. Current causal picture
+## 8. Current causal picture
 
 The evidence currently supports:
 
 ```text
 binding subset budget
-    -> non-redundant hard-gradient selection
-    -> broader unresolved-direction coverage
-    -> trajectory / learned-function difference
-    -> held-out mean difference
+    -> hard/non-redundant gradient allocation
+    -> changed coverage of unresolved directions
+    -> changed optimization trajectory / learned function
+    -> architecture/task-dependent performance expression
 ```
 
-The unresolved object is the middle mapping from trajectory coverage to a **functionally meaningful reusable change**.
+The open object is the map from trajectory coverage to a **functionally meaningful learned change**.
 
-A viable mediator should ideally satisfy all of the following:
+A viable mediator should ideally be:
 
 - invariant to trivial function-preserving reparameterizations;
-- measured using training-only information before held-out construction;
-- vary with the finite-budget effect rather than only with training convention;
-- prospectively predict or mediate held-out mean behavior;
-- survive a materially different task or architecture.
+- measurable from training-only information before held-out construction;
+- coupled to the finite-budget effect;
+- prospective rather than fitted to final held-out outcomes;
+- stable across materially different tasks/architectures.
 
-## 10. Conditions under which SGO should help
+## 9. Predicted help/failure regimes
 
-The theory predicts benefit when most of the following hold:
+SGO should be most useful when:
 
-- Q is substantially smaller than K;
-- candidate environments induce materially different model-conditioned gradients;
-- those differences contain reusable task structure rather than mostly noise;
-- train and held-out environments share latent factors;
-- the model can convert coverage into a reusable learned-function change;
-- the selector retains hardness while reducing redundancy.
+- Q is materially smaller than K;
+- candidate gradients contain non-redundant task-relevant corrections;
+- the model can use those corrections under the available training budget;
+- novelty does not displace necessary hard examples.
 
-The binding-budget condition now has two preregistered n=30 confirmations on fresh blocks.
-
-## 11. Predicted failure regimes
-
-Weak, null, or negative effects are expected when:
+Weak/null effects are expected when:
 
 - Q approaches K;
 - candidate gradients are already redundant;
 - novelty is dominated by nuisance/noise;
-- train/held-out factors do not overlap;
-- selected directions are mutually incompatible rather than reusable;
-- novelty displaces necessary hard examples;
-- the target is extreme tail safety rather than average coverage.
+- selected directions conflict rather than complement one another;
+- the target metric depends on a downstream functional regime where the trajectory difference is not beneficial.
 
-At Q=K=16, exact method identity has now been observed in both preregistered Q-scaling runs.
+At Q=K=16, exact method identity has now been observed in all **three** preregistered Q-scaling blocks.
 
-## 12. What remains empirically useful from representation rank
+## 10. Highest-value next falsification
 
-Raw representation rank should now be described narrowly:
+A fourth Digits Q-scaling replication would add little. The next decisive test is **cross-task budget scaling** using the same frozen low-vs-high contrast and Q=K identity logic on a materially different task/architecture.
 
-> **A fixed-parameterization, condition-average directional marker with a strong prospective record, but not a coordinate-free causal law or validated quantitative mediator.**
+Priority candidates:
 
-The function-preserving intervention does not erase that predictive record. It changes what the record means.
+1. FashionMNIST Transformer, where prior SGO/rank experiments already define a stable training protocol;
+2. CIFAR-10 / ResNet-20, where a small corrected-significant mean benefit already exists but compute cost is higher.
 
-Channel-standardized rank should not currently be promoted as a replacement: it passed scale invariance but failed the fresh budget-coupling test.
+The protocol must be fixed before outcomes, including K/Q values, optimizer, environment generator, held-out construction and the exact attenuation statistic.
 
-## 13. Highest-value next falsification program
-
-### A. Function-space mediator
-
-Measure a diagnostic defined by model behavior rather than hidden-coordinate scale. Candidate classes include training-only cross-environment probe transfer, class-conditional margin structure, or predictive disagreement across controlled environment combinations.
-
-### B. Matched-coverage / different-reusability experiment
-
-Construct two environment families with comparable selected-gradient non-redundancy but different latent-factor reuse. If held-out benefit differs, this isolates the conversion/reusability step after coverage.
-
-### C. Structured-vs-unstructured matched novelty
-
-Match gradient-novelty magnitude while changing whether the stochastic variation reflects reusable structure or unstructured nuisance.
-
-### D. Cross-task budget scaling
-
-Repeat the frozen low-vs-high Q contrast on a materially different task/architecture. This is now more valuable than a third same-task replication.
-
-### E. Early-trajectory functional diagnostics
-
-Freeze candidate function-space diagnostics early in training and test them prospectively on new conditions without calibrating on final held-out outcomes.
+Separately, training-only function-space diagnostics should target the unresolved downstream mediator rather than continuing proxy-rank search.
 
 ## Working claim
 
-> **Under a binding finite update budget, selecting stochastic environments that are both currently hard and non-redundant in model-conditioned gradient space can improve coverage of unresolved learning directions and thereby improve held-out mean performance in tested structured regimes. The budget dependence has independently replicated. Raw representation effective rank is a useful but coordinate-dependent marker; channel-standardized effective rank is scale-invariant but failed as a quantitative mediator. The functionally meaningful internal mediator remains open.**
+> **Under a binding finite update budget, selecting stochastic environments that are both currently hard and non-redundant in model-conditioned gradient space can improve performance in tested structured regimes. The finite-budget dependence has now replicated in two MLP blocks and a SmallCNN block within Digits/geometric, with exact identity whenever Q=K. This supports an architecture-robust subset-allocation mechanism within that family. It does not establish cross-dataset universality, a monotone Q law, or the downstream function-space mediator.**
