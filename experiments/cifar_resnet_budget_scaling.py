@@ -12,7 +12,7 @@ from cifar_resnet_pilot import (
     CIFARResNet20, build_schedule, configure, head_gradient_directions,
     load_cifar, normalize, seed_everything, select_gradnov, select_loss,
 )
-from cifar_resnet_finetune_pilot import cache_schedule, cache_test, evaluate_cached, pretrain
+from cifar_resnet_finetune_pilot import cache_schedule, cache_test, pretrain
 
 REPS=tuple(range(50,80)); METHODS=("loss_hard","gradnov"); QS=(2,4,6,8)
 K=8; BATCH=128; PRETRAIN_EPOCHS=10; FINETUNE_EPOCHS=2
@@ -99,6 +99,21 @@ def train(start,end,out,data_root):
     (out/'manifest.json').write_text(json.dumps(manifest,indent=2))
     print('SEALED_TRAINING_COMPLETE '+PROTOCOL_HASH,flush=True)
 
+def evaluate_model(model,heldout,yte,xte):
+    model.eval(); acc=[]; env_rows=[]
+    with torch.no_grad():
+        for s,u8 in zip(HELDOUT_SEEDS,heldout):
+            correct=0
+            for idx in torch.arange(len(yte)).split(256):
+                pred=model(normalize(u8[idx].float()/255))[0].argmax(1); correct+=int((pred==yte[idx]).sum())
+            a=correct/len(yte); acc.append(a); env_rows.append((s,a))
+        clean_correct=0
+        for idx in torch.arange(len(yte)).split(256):
+            pred=model(normalize(xte[idx]))[0].argmax(1); clean_correct+=int((pred==yte[idx]).sum())
+    a=np.asarray(acc,np.float64)
+    met={"mean_test":float(a.mean()),"sd_test":float(a.std(ddof=1)),"p10_test":float(np.quantile(a,.1)),"min_test":float(a.min()),"clean_test":clean_correct/len(yte)}
+    return met,env_rows
+
 def evaluate(start,end,out,data_root):
     check_range(start,end); configure(); m=json.loads((out/'manifest.json').read_text())
     if (m['start'],m['end'],m['protocol_hash'])!=(start,end,PROTOCOL_HASH): raise ValueError('manifest protocol/range mismatch')
@@ -115,16 +130,10 @@ def evaluate(start,end,out,data_root):
             for method in METHODS:
                 p=out/'states'/f'rep{rep}_q{q}_{method}.pt'; ck=torch.load(p,map_location='cpu',weights_only=True)
                 if (ck['rep'],ck['q'],ck['method'],ck['protocol_hash'])!=(rep,q,method,PROTOCOL_HASH): raise ValueError('checkpoint metadata mismatch')
-                state=ck['state_dict']; model=CIFARResNet20(); model.load_state_dict(state); model.eval()
-                met=evaluate_cached(model,heldout,yte,xte)
+                state=ck['state_dict']; model=CIFARResNet20(); model.load_state_dict(state)
+                met,env_rows=evaluate_model(model,heldout,yte,xte)
                 rows.append({"rep":rep,"q":q,"method":method,"candidate_k":K,"coverage_ratio":q/K,"state_digest":state_digest(state),**met})
-                # Retain per-environment accuracy for independent aggregate verification.
-                with torch.no_grad():
-                    for s,u8 in zip(HELDOUT_SEEDS,heldout):
-                        correct=0
-                        for idx in torch.arange(len(yte)).split(256):
-                            pred=model(normalize(u8[idx].float()/255))[0].argmax(1); correct+=int((pred==yte[idx]).sum())
-                        perenv.append({"rep":rep,"q":q,"method":method,"env_seed":s,"accuracy":correct/len(yte)})
+                perenv.extend({"rep":rep,"q":q,"method":method,"env_seed":s,"accuracy":a} for s,a in env_rows)
     for n,h in m['checkpoints'].items():
         if sha256(out/'states'/n)!=h: raise ValueError('checkpoint mutated during evaluation')
     pd.DataFrame(rows).to_csv(out/f'cifar_budget_heldout_{start}_{end}.csv',index=False)
