@@ -1,0 +1,2 @@
+decision,n,q16_identity_pass,q16_mismatch_count,coverage_pass,mean_benefit_low,mean_benefit_high,mean_benefit_attenuation,benefit_attenuation_se,benefit_attenuation_ci95_low,benefit_attenuation_ci95_high,benefit_attenuation_p_one_sided
+CNN FINITE-BUDGET COVERAGE REPLICATES,30,True,0,True,0.0205379584586868,0.0078885970233629,0.0126493614353239,0.0039198079685842,0.0046324539865074,0.0206662688841403,0.0015483441519664
