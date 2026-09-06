@@ -1,0 +1,258 @@
+name: CIFAR-10 ResNet Q-scaling technical recovery
+
+on:
+  pull_request:
+    types: [opened, reopened]
+    branches: [main]
+    paths:
+      - 'experiments/cifar_resnet_budget_scaling.py'
+      - 'experiments/summarize_cifar_resnet_budget_scaling.py'
+      - 'experiments/check_cifar_budget_recovery.py'
+      - '.github/workflows/cifar_resnet_budget_scaling.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+env:
+  OMP_NUM_THREADS: '4'
+  MKL_NUM_THREADS: '4'
+  OPENBLAS_NUM_THREADS: '4'
+  NUMEXPR_NUM_THREADS: '4'
+
+jobs:
+  preserve:
+    if: github.event_name != 'pull_request' || (github.event.pull_request.number == 77 && github.event.pull_request.head.repo.full_name == github.repository)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.14'
+          cache: pip
+      - name: Install verifier runtime
+        run: |
+          python -m pip install torch==2.10.0+cpu --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install numpy==2.3.5 pandas==2.2.3
+      - name: Download only the five complete original training artifacts
+        uses: actions/download-artifact@v4
+        with:
+          artifact-ids: '9982782017,9982604257,9982045116,9982594822,9982627560'
+          run-id: '34004715086'
+          github-token: ${{ github.token }}
+          path: preserved
+          merge-multiple: false
+      - name: Verify original 200 states; no evaluation data loaded
+        run: |
+          python experiments/check_cifar_budget_recovery.py selftest
+          python experiments/check_cifar_budget_recovery.py verify --scope original --root preserved --report preservation.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cifar-budget-preservation-report
+          path: preservation.json
+          if-no-files-found: error
+          retention-days: 90
+
+  train:
+    if: github.event_name != 'pull_request' || (github.event.pull_request.number == 77 && github.event.pull_request.head.repo.full_name == github.repository)
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      max-parallel: 5
+      matrix:
+        include:
+          - {start: 60, end: 61}
+          - {start: 61, end: 62}
+          - {start: 62, end: 63}
+          - {start: 63, end: 64}
+          - {start: 64, end: 65}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.14'
+          cache: pip
+      - name: Install unchanged scientific runtime
+        run: |
+          python -m pip install torch==2.10.0+cpu torchvision==0.25.0+cpu --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install numpy==2.3.5 pandas==2.2.3 scipy==1.17.0 scikit-learn==1.8.0
+      - name: Download and integrity-check CIFAR-10
+        run: |
+          mkdir -p .cache/cifar10
+          curl -L --fail --retry 2 --connect-timeout 10 --max-time 600 https://www.cs.toronto.edu/~kriz/cifar-10-python.tar.gz -o /tmp/cifar.tar.gz
+          python - <<'PY'
+          from torchvision.datasets import CIFAR10
+          from torchvision.datasets.utils import check_integrity, extract_archive
+          if not check_integrity('/tmp/cifar.tar.gz', CIFAR10.tgz_md5):
+              raise ValueError('CIFAR archive checksum mismatch')
+          extract_archive('/tmp/cifar.tar.gz', '.cache/cifar10')
+          PY
+      - name: Verify original science and test recovery validator
+        run: |
+          python experiments/check_cifar_budget_recovery.py sources
+          python experiments/check_cifar_budget_recovery.py selftest
+          python experiments/cifar_resnet_budget_scaling.py selftest
+      - name: Retrain only one interrupted-shard replicate; seal all eight states
+        run: python experiments/cifar_resnet_budget_scaling.py train --start ${{ matrix.start }} --end ${{ matrix.end }} --output-dir artifacts
+      - name: Archive scientific source and runtime
+        if: always()
+        run: |
+          mkdir -p artifacts/source
+          cp experiments/cifar_resnet_pilot.py experiments/cifar_resnet_finetune_pilot.py experiments/cifar_resnet_budget_scaling.py experiments/summarize_cifar_resnet_budget_scaling.py artifacts/source/
+          python -m pip freeze > artifacts/pip-freeze.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: cifar-budget-recovery-train-${{ matrix.start }}
+          path: artifacts/
+          if-no-files-found: error
+          retention-days: 90
+
+  seal:
+    needs: [preserve, train]
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.14'
+      - name: Install verifier runtime
+        run: |
+          python -m pip install torch==2.10.0+cpu --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install numpy==2.3.5 pandas==2.2.3
+      - uses: actions/download-artifact@v4
+        with:
+          artifact-ids: '9982782017,9982604257,9982045116,9982594822,9982627560'
+          run-id: '34004715086'
+          github-token: ${{ github.token }}
+          path: sealed
+          merge-multiple: false
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: cifar-budget-recovery-train-*
+          path: sealed
+          merge-multiple: false
+      - name: Enforce global 30-replicate / 240-state barrier before evaluation
+        run: python experiments/check_cifar_budget_recovery.py verify --scope all --root sealed --report global_seal.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cifar-budget-global-seal
+          path: global_seal.json
+          if-no-files-found: error
+          retention-days: 90
+
+  evaluate:
+    needs: seal
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    strategy:
+      fail-fast: false
+      max-parallel: 6
+      matrix:
+        include:
+          - {start: 50, end: 55, origin: '34004715086', artifact: 'cifar-budget-train-50'}
+          - {start: 55, end: 60, origin: '34004715086', artifact: 'cifar-budget-train-55'}
+          - {start: 65, end: 70, origin: '34004715086', artifact: 'cifar-budget-train-65'}
+          - {start: 70, end: 75, origin: '34004715086', artifact: 'cifar-budget-train-70'}
+          - {start: 75, end: 80, origin: '34004715086', artifact: 'cifar-budget-train-75'}
+          - {start: 60, end: 61, artifact: 'cifar-budget-recovery-train-60'}
+          - {start: 61, end: 62, artifact: 'cifar-budget-recovery-train-61'}
+          - {start: 62, end: 63, artifact: 'cifar-budget-recovery-train-62'}
+          - {start: 63, end: 64, artifact: 'cifar-budget-recovery-train-63'}
+          - {start: 64, end: 65, artifact: 'cifar-budget-recovery-train-64'}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.14'
+          cache: pip
+      - name: Install unchanged scientific runtime
+        run: |
+          python -m pip install torch==2.10.0+cpu torchvision==0.25.0+cpu --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install numpy==2.3.5 pandas==2.2.3 scipy==1.17.0 scikit-learn==1.8.0
+      - uses: actions/download-artifact@v4
+        with:
+          name: cifar-budget-global-seal
+          path: seal
+      - uses: actions/download-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          run-id: ${{ matrix.origin || github.run_id }}
+          github-token: ${{ github.token }}
+          path: artifacts
+      - name: Validate this shard against global seal before loading evaluation inputs
+        run: python experiments/check_cifar_budget_recovery.py verify --scope shard --root artifacts --seal seal/global_seal.json
+      - name: Download and integrity-check CIFAR-10
+        run: |
+          mkdir -p .cache/cifar10
+          curl -L --fail --retry 2 --connect-timeout 10 --max-time 600 https://www.cs.toronto.edu/~kriz/cifar-10-python.tar.gz -o /tmp/cifar.tar.gz
+          python - <<'PY'
+          from torchvision.datasets import CIFAR10
+          from torchvision.datasets.utils import check_integrity, extract_archive
+          if not check_integrity('/tmp/cifar.tar.gz', CIFAR10.tgz_md5):
+              raise ValueError('CIFAR archive checksum mismatch')
+          extract_archive('/tmp/cifar.tar.gz', '.cache/cifar10')
+          PY
+      - name: Evaluate the original fixed protocol without recalibration
+        run: python experiments/cifar_resnet_budget_scaling.py evaluate --start ${{ matrix.start }} --end ${{ matrix.end }} --output-dir artifacts
+      - name: Validate checkpoint immutability and environment reaggregation
+        run: python experiments/check_cifar_budget_recovery.py verify --scope shard --root artifacts --seal seal/global_seal.json --evaluated --report artifacts/evaluation_validation.json
+      - name: Archive evaluation backend provenance
+        if: always()
+        run: |
+          python -m pip freeze > artifacts/evaluation-pip-freeze.txt
+          python - <<'PY'
+          import json, sys, torch
+          from pathlib import Path
+          sys.path.insert(0, 'experiments')
+          import cifar_resnet_budget_scaling as b
+          b.configure()
+          r = b.runtime()
+          r['torch_config'] = torch.__config__.show()
+          r['cpuinfo'] = Path('/proc/cpuinfo').read_text()
+          Path('artifacts/evaluation_runtime.json').write_text(json.dumps(r, indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: cifar-budget-recovery-eval-${{ matrix.start }}
+          path: artifacts/
+          if-no-files-found: error
+          retention-days: 90
+
+  aggregate:
+    needs: evaluate
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.14'
+      - name: Install validator and summarizer runtime
+        run: |
+          python -m pip install torch==2.10.0+cpu --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install numpy==2.3.5 pandas==2.2.3 scipy==1.17.0
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: cifar-budget-recovery-eval-*
+          path: downloaded
+          merge-multiple: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: cifar-budget-global-seal
+          path: seal
+      - name: Validate all 240 states and 7680 environment rows
+        run: python experiments/check_cifar_budget_recovery.py verify --scope all --root downloaded --seal seal/global_seal.json --evaluated --report aggregate/recovery_validation.json
+      - name: Apply unchanged frozen Issue 76 decision
+        run: python experiments/summarize_cifar_resnet_budget_scaling.py --input-dir downloaded --output-dir aggregate
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cifar-budget-recovery-aggregate30
+          path: aggregate/
+          if-no-files-found: error
+          retention-days: 90
