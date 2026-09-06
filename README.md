@@ -4,19 +4,18 @@
 
 Random seeds index stochastic environments, which induce different model-conditioned gradients. Seed-Guided Optimization (SGO) studies whether a fixed subset-update budget can be allocated more effectively by retaining hard environments while reducing redundancy among those gradient directions. Seed integers are not assumed to have intrinsic semantic classes or universal quality.
 
-> **Status — 2026-09-06:** experimental research code. The strongest mechanism evidence is now finite-budget subset allocation. Three preregistered n=30 Q-scaling experiments within the Digits/geometric family—two MLP blocks and one SmallCNN block—show positive low-Q versus high-Q benefit attenuation and exact method identity when Q=K. The downstream function-space mediator remains unidentified. A full-strength geometric benefit replicates in MLP and SmallCNN, but the MLP full-minus-clean interaction does **not** replicate in SmallCNN.
+> **Status — 2026-09-06:** experimental research code. The strongest mechanism evidence is finite-budget subset allocation. Three preregistered n=30 Q-scaling experiments within Digits/geometric—two MLP blocks and one SmallCNN block—give strong low-Q versus high-Q attenuation and exact method identity when Q=K. A new preregistered n=30 FashionMNIST/Tiny Transformer test also passes the frozen directional contrast and reproduces exact Q=K identity, providing the first cross-task support, but its attenuation is statistically borderline because the two-sided 95% CI narrowly crosses zero. The downstream function-space mediator remains unidentified.
 
 ## Latest completed experiments
 
 | Experiment | Result | Interpretation |
 |---|---|---|
-| Dual evaluation, Issue #59, 30 pairs | shared +0.7817 pp, p=0.0998; specificity +0.0067 pp, p=0.4258 | **NO SHARED REPLICATION**; near-clean matched mixtures |
-| MLP fixed-dose, Issue #61, 30 pairs | full +2.842 pp; full-minus-clean +1.621 pp, p=0.04897 | full effect strong; interaction initially borderline |
-| MLP reserve-image replication, Issue #64, 30 pairs | full +2.274 pp, p=1.75e-8; full-minus-clean +2.906 pp, p=0.00173 | interaction replicates on disjoint reserve images, but intermediate strengths are non-monotone |
+| MLP reserve-image replication, Issue #64, 30 pairs | full +2.274 pp, p=1.75e-8; full-minus-clean +2.906 pp, p=0.00173 | MLP interaction replicates on disjoint reserve images, but intermediate strengths are non-monotone |
 | SmallCNN regime audit, Issue #67, 30 pairs | full +2.417 pp, p=2.34e-5; clean +3.436 pp; full-minus-clean -1.019 pp, p=0.792 | full effect replicates; full-specific interaction does not |
-| SmallCNN Q-scaling, Issue #70, 30 pairs | low-Q minus high-Q attenuation **+1.265 pp**, 95% CI [+0.463,+2.067], p=0.00155; Q=16 exact identity | **CNN FINITE-BUDGET COVERAGE REPLICATES** |
+| SmallCNN Q-scaling, Issue #70, 30 pairs | attenuation **+1.265 pp**, 95% CI [+0.463,+2.067], p=0.00155; Q=16 exact identity | strong architecture-robust finite-budget evidence within Digits/geometric |
+| FashionMNIST Tiny Transformer Q-scaling, Issue #73, 30 pairs | attenuation **+0.314 pp**, 95% CI [-0.0065,+0.6340], preregistered one-sided p=0.0273; Q=8 exact identity | **first cross-task directional support**, but borderline rather than strong confirmation |
 
-The SmallCNN Q-scaling result independently verified 300 checkpoint hashes/state digests and 24,000 environment rows. See [CNN budget result](docs/CNN_BUDGET_SCALING_RESULT.md), [research status](docs/RESEARCH_STATUS.md), and the individual experiment documents.
+See [Fashion budget result](docs/FASHION_BUDGET_SCALING_RESULT.md), [CNN budget result](docs/CNN_BUDGET_SCALING_RESULT.md), and [research status](docs/RESEARCH_STATUS.md).
 
 ## Research claim
 
@@ -28,11 +27,11 @@ s -> e_s -> g(theta, B, e_s) -> optimization trajectory -> learned function -> h
 
 SGO is **model-conditioned stochastic-environment selection / trajectory shaping**, not seed-number optimization. The practical selector keeps a hard anchor and adds candidates whose head-gradient signatures are less redundant with those already selected.
 
-The current supported mechanism statement is deliberately narrow:
+The current supported mechanism statement is:
 
-> Under a binding subset-update budget, hard + gradient-nonredundant environment selection can outperform hardness-only allocation in tested structured regimes. Within the Digits/geometric family, this finite-budget dependence survives both MLP and SmallCNN parameterizations and becomes exactly zero when all K candidates contribute. The downstream learned-function mediator remains open.
+> Under a binding subset-update budget, hard + gradient-nonredundant environment selection can outperform hardness-only allocation in tested structured regimes. The dependence is strongly replicated across MLP and SmallCNN within Digits/geometric and receives preregistered but borderline cross-task support on FashionMNIST/Tiny Transformer. In every Q-scaling test, the methods become exactly identical when all K candidates contribute. The downstream learned-function mediator remains open.
 
-Do **not** read this as a universal gradient-diversity rule. Pure diversity can be weak, larger accumulated gradient rank is not sufficient, and full-vs-clean dose interaction is architecture-dependent.
+Do **not** read this as a universal gradient-diversity law. Pure diversity can be weak, larger accumulated gradient rank is not sufficient, and the Q-response shape is task dependent.
 
 ## Evidence at a glance
 
@@ -42,15 +41,16 @@ Do **not** read this as a universal gradient-diversity rule. Pure diversity can 
 | Original SmallCNN replication | +2.25 pp mean and +2.57 pp minimum vs loss-hard, both Holm-significant | tested CNN protocol |
 | Optimizer replication | gains survive tuned AdamW and SGD+momentum | not explained by AdamW alone in tested MLP |
 | CIFAR-10 / ResNet-20 primary, 40 pairs | mean +0.1206 pp, Holm(5) p=0.01336 | mean supported; tails unconfirmed |
-| Finite-budget Q-scaling | MLP attenuation +2.034 pp and +2.086 pp; SmallCNN +1.265 pp; Q=K exact in all three | architecture-robust **within Digits/geometric**, not cross-dataset proof |
+| Digits finite-budget Q-scaling | MLP attenuation +2.034 and +2.086 pp; SmallCNN +1.265 pp; Q=K exact in all three | strong architecture robustness within one dataset/generator family |
+| FashionMNIST/Tiny Transformer Q-scaling | +0.314 pp attenuation; one-sided p=0.0273; Q=8 exact | first cross-task support; two-sided CI crosses zero |
 | Raw representation-rank prospective record | registered condition-average direction matches across multiple datasets/architectures | fixed-parameterization marker, not causal law |
 | Function-preserving rank intervention | raw effective rank changes while predictions remain identical | raw rank is not functionally intrinsic |
 | Standardized-rank budget test | mediator criterion failed while benefit attenuation replicated | normalization did not rescue the mediator hypothesis |
 | Hosted-CPU reproducibility audit | one thread did not remove CIFAR cross-run drift | bitwise cross-hardware reproducibility not established |
 
-## What the Q-scaling result means
+## Q-scaling evidence
 
-For K=16, the latest SmallCNN held-out mean benefits were:
+Latest SmallCNN/Digits held-out mean benefits, K=16:
 
 | Q | gradnov - loss-hard |
 |---:|---:|
@@ -60,14 +60,24 @@ For K=16, the latest SmallCNN held-out mean benefits were:
 | 12 | +1.578 pp |
 | 16 | 0 exactly |
 
-The curve is not strictly monotonic—Q=12 exceeds Q=8. The supported test is the preregistered low-Q versus high-Q contrast, not a universal monotone law.
+FashionMNIST/Tiny Transformer, K=8:
 
-At Q=16, every candidate contributes. Loss-hard and gradnov then had identical model-state SHA256 digests, bitwise-identical parameter tensors, identical training diagnostics, and identical held-out/clean metrics in all 30 pairs. This is direct evidence that the method advantage requires selector freedom under a binding subset budget.
+| Q | gradnov - loss-hard |
+|---:|---:|
+| 2 | +0.846 pp |
+| 4 | +0.026 pp |
+| 6 | +0.245 pp |
+| 8 | 0 exactly |
 
-Recompute the primary SmallCNN Q-scaling statistic without retraining:
+Neither curve is strictly monotonic. The supported quantity is the preregistered low-Q versus high-Q contrast plus exact disappearance at Q=K, not a smooth universal dose law.
+
+At Q=K, loss-hard and gradnov have the same candidate set and update order. Exact model-state identity was verified in every paired run of all four preregistered Q-scaling blocks.
+
+Recompute the published paired statistics without retraining:
 
 ```bash
 python experiments/check_cnn_budget_paired.py --input-dir results
+python experiments/check_fashion_budget_paired.py --input-dir results
 ```
 
 ## Mechanism boundaries
@@ -86,7 +96,7 @@ The evidence does **not** support:
 - bitwise cross-hardware hosted-CPU reproducibility;
 - GPU efficiency claims from CPU experiments.
 
-The repeated structured-vs-nuisance matching attempts also did not identify reusable-factor causality. The downstream map from broader finite-budget coverage to clean/shifted performance appears architecture/optimization dependent.
+The downstream map from broader finite-budget coverage to clean/shifted performance remains architecture/optimization dependent. The structured-vs-nuisance matching program also has not established reusable-factor causality.
 
 ## External validation: CIFAR-10 / ResNet-20
 
@@ -100,16 +110,15 @@ Accuracy-like CSV fields use fractions: `0.01` is one percentage point. The publ
 python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
-python experiments/mlp_geometric.py --start 0 --end 20 --output mlp_geometric.csv
 ```
 
-Use [experiments/README.md](experiments/README.md) and [docs/README.md](docs/README.md) for the evidence archive and exact workflows.
+Use [experiments/README.md](experiments/README.md) and [docs/README.md](docs/README.md) for exact workflows and evidence files.
 
 ## Current research priority
 
-The next high-value falsification is **cross-task Q-scaling**, not another Digits replication. The frozen low-vs-high Q contrast should be repeated on a materially different task/architecture with protocol choices fixed before outcomes. FashionMNIST/Transformer or CIFAR/ResNet are candidates.
+The next highest-value budget falsification is **CIFAR-10 / ResNet-20 Q-scaling**, because it would move the mechanism to a substantially larger convolutional task. That experiment is more expensive and should preserve the existing CIFAR protocol while fixing K/Q and the attenuation contrast before outcomes.
 
-Other priorities include training-only function-space diagnostics, a new tail-safety theory, pinned-hardware numerical studies, and GPU comparisons with genuinely matched computational budgets.
+In parallel, the downstream mediator should be attacked with prospective training-only function-space diagnostics rather than additional representation-rank normalizations. Other priorities are a new tail-safety theory, pinned-hardware numerical studies, and GPU comparisons with genuinely matched costs.
 
 ## Citation and license
 
