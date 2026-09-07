@@ -1,0 +1,8 @@
+{
+  "checkpoint_count": 240,
+  "environment_rows_verified": 7680,
+  "max_environment_reaggregation_error": 0.0,
+  "protocol_hash": "e388d13d5890e8b60e939f085403763d5065360bd3cdaecc7aa05de510f144d1",
+  "q8_training_identity_pairs": 30,
+  "replicates": [50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79]
+}
