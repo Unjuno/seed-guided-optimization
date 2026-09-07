@@ -1,0 +1,166 @@
+name: Loss-stratified gradient nonredundancy intervention
+
+on:
+  pull_request:
+    types: [opened, reopened]
+    branches: [main]
+    paths:
+      - 'experiments/loss_stratified_nonredundancy.py'
+      - 'experiments/summarize_loss_stratified_nonredundancy.py'
+      - '.github/workflows/loss_stratified_nonredundancy.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  OMP_NUM_THREADS: '1'
+  MKL_NUM_THREADS: '1'
+  OPENBLAS_NUM_THREADS: '1'
+  NUMEXPR_NUM_THREADS: '1'
+
+jobs:
+  reference:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      max-parallel: 6
+      matrix:
+        include:
+          - {start: 1600, end: 1605}
+          - {start: 1605, end: 1610}
+          - {start: 1610, end: 1615}
+          - {start: 1615, end: 1620}
+          - {start: 1620, end: 1625}
+          - {start: 1625, end: 1630}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Install pinned CPU runtime
+        run: |
+          python -m pip install torch==2.10.0 --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install -r requirements.txt
+      - name: Synthetic protocol self-test only
+        run: python experiments/loss_stratified_nonredundancy.py selftest
+      - name: Build shared-reference MAXNOV/MINNOV schedules and seal them
+        run: python experiments/loss_stratified_nonredundancy.py reference --start ${{ matrix.start }} --end ${{ matrix.end }} --output-dir artifacts
+      - name: Archive reference source and runtime provenance
+        run: |
+          mkdir -p artifacts/source
+          cp experiments/common.py experiments/cnn_regime_interaction.py experiments/fixed_dose_response.py experiments/transfer_specificity.py experiments/loss_stratified_nonredundancy.py experiments/summarize_loss_stratified_nonredundancy.py requirements.txt artifacts/source/
+          python -m pip freeze > artifacts/reference-pip-freeze.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nonredundancy-reference-${{ matrix.start }}
+          path: artifacts/
+          if-no-files-found: error
+          retention-days: 90
+
+  train:
+    needs: reference
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      max-parallel: 6
+      matrix:
+        include:
+          - {start: 1600, end: 1605}
+          - {start: 1605, end: 1610}
+          - {start: 1610, end: 1615}
+          - {start: 1615, end: 1620}
+          - {start: 1620, end: 1625}
+          - {start: 1625, end: 1630}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Install pinned CPU runtime
+        run: |
+          python -m pip install torch==2.10.0 --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install -r requirements.txt
+      - uses: actions/download-artifact@v4
+        with:
+          name: nonredundancy-reference-${{ matrix.start }}
+          path: artifacts
+      - name: Verify sealed reference schedules and train fixed intervention arms
+        run: python experiments/loss_stratified_nonredundancy.py train --start ${{ matrix.start }} --end ${{ matrix.end }} --output-dir artifacts
+      - name: Archive arm runtime provenance
+        run: python -m pip freeze > artifacts/arm-pip-freeze.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nonredundancy-train-${{ matrix.start }}
+          path: artifacts/
+          if-no-files-found: error
+          retention-days: 90
+
+  evaluate:
+    needs: train
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      max-parallel: 6
+      matrix:
+        include:
+          - {start: 1600, end: 1605}
+          - {start: 1605, end: 1610}
+          - {start: 1610, end: 1615}
+          - {start: 1615, end: 1620}
+          - {start: 1620, end: 1625}
+          - {start: 1625, end: 1630}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Install pinned CPU runtime
+        run: |
+          python -m pip install torch==2.10.0 --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install -r requirements.txt
+      - uses: actions/download-artifact@v4
+        with:
+          name: nonredundancy-train-${{ matrix.start }}
+          path: artifacts
+      - name: Verify all seals, then construct fresh heldout and evaluate
+        run: python experiments/loss_stratified_nonredundancy.py evaluate --start ${{ matrix.start }} --end ${{ matrix.end }} --output-dir artifacts
+      - name: Archive evaluation runtime provenance
+        run: python -m pip freeze > artifacts/eval-pip-freeze.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nonredundancy-eval-${{ matrix.start }}
+          path: artifacts/
+          if-no-files-found: error
+          retention-days: 90
+
+  aggregate:
+    needs: evaluate
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install summarizer runtime
+        run: python -m pip install numpy==2.3.5 pandas==2.2.3 scipy==1.17.0
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: nonredundancy-eval-*
+          path: downloaded
+          merge-multiple: false
+      - name: Apply frozen Issue 80 manipulation/equivalence/performance decision
+        run: python experiments/summarize_loss_stratified_nonredundancy.py --input-dir downloaded --output-dir aggregate
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nonredundancy-aggregate30
+          path: aggregate/*.csv
+          if-no-files-found: error
+          retention-days: 90
