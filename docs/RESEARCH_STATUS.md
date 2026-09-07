@@ -1,20 +1,60 @@
 # Research status
 
-Updated 2026-09-07. A finding is **supported** only within its comparison, task and statistical rule. Negative results and preregistered decisions are retained; a PASS label is not universal or causal proof.
+Updated 2026-09-07. A finding is **supported** only within its comparison, task and statistical rule. Negative results and preregistered decisions are retained; a PASS label is not universal or proof of a unique mediator.
 
 ## Latest completed evidence
 
 | Experiment | Frozen decision | Evidence and scope |
 |---|---|---|
+| Loss-stratified shared-reference intervention, #80, 30 pairs | **LOSS-STRATIFIED NONREDUNDANCY SUPPORT** | novelty contrast +0.23163, 30/30 positive; standardized reference hardness difference -0.00910 SD with 90% CI [-0.01328,-0.00492] inside frozen ±0.10 TOST margin; MAXNOV-MINNOV heldout **+4.669 pp**, 95% CI [+3.187,+6.152], p2.39e-7, 26/30 positive. Post-hoc physical parameter diversity also increases strongly, so gradient-specific uniqueness remains unresolved. |
 | Reserve-image MLP replication, #64, 30 pairs | **DOSE-DEPENDENT BENEFIT REPLICATES ON RESERVE IMAGES** | Full +2.27370 pp, p1.75e-8; full-minus-clean +2.90556 pp, p0.001726. Intermediate strengths negative. |
 | SmallCNN regime audit, #67, 30 pairs | **CNN FULL EFFECT REPLICATES / CLEAN INTERACTION DOES NOT** | Full +2.41698 pp, p2.34e-5; clean +3.43634 pp; full-minus-clean -1.01937 pp, p0.792. |
 | SmallCNN Q-scaling, #70, 30 pairs | **CNN FINITE-BUDGET COVERAGE REPLICATES** | attenuation +1.26494 pp, 95% CI [+0.46325,+2.06663], p0.001548; Q16 exact identity. |
-| SmallCNN endpoint sensitivity, post-hoc | descriptive only | Excluding Q16: low mean(Q2,Q4)-Q12 +0.47608 pp, 95% CI [-0.53741,+1.48956], p0.1723. The primary PASS does not establish non-full-Q attenuation by itself. |
 | FashionMNIST Tiny Transformer Q-scaling, #73, 30 pairs | **FASHION TRANSFORMER FINITE-BUDGET COVERAGE REPLICATES** | attenuation +0.31375 pp, 95% CI [-0.00651,+0.63401], preregistered one-sided p0.027264; Q8 exact. Borderline cross-task support. |
 | CIFAR-10 ResNet-20 Q-scaling, #76, 30 pairs | **CIFAR RESNET FINITE-BUDGET COVERAGE REPLICATES** | attenuation **+0.11679 pp**, 95% CI **[+0.03353,+0.20005]**, p**0.003804**; Q8 exact identity. Strong larger-task cross-task replication. |
-| CIFAR endpoint sensitivity, post-hoc | descriptive only | Excluding Q8: low mean(Q2,Q4)-Q6 **+0.09682 pp**, 95% CI **[+0.00324,+0.19040]**, p0.02152. Unlike SmallCNN, attenuation remains positive without the forced Q=K endpoint. |
+| CIFAR endpoint sensitivity, post-hoc | descriptive only | Excluding Q8: low mean(Q2,Q4)-Q6 **+0.09682 pp**, 95% CI **[+0.00324,+0.19040]**, p0.02152. Attenuation remains positive without forced Q=K zero. |
 
-The full-strength positive effect survives MLP and SmallCNN, but the full-vs-clean interaction is not architecture-general. The strongest common upstream evidence is now finite-budget subset allocation.
+The strongest common upstream evidence is finite-budget subset allocation. Issue #80 adds a fixed-Q direct intervention: within tightly loss-stratified feasible subsets defined on the same reference states, high reference gradient novelty produces much better shifted heldout mean than low novelty. The main remaining competing explanation is that the high-novelty schedules also select more diverse known physical transformations.
+
+## Direct nonredundancy intervention status
+
+Issue #80 removes the largest limitation of Q-scaling: Q is fixed at 4 in both arms and no Q=K endpoint enters the comparison.
+
+Shared-reference construction:
+
+```text
+same model state + same K=16 candidates
+ -> retain loss rank 1
+ -> choose one from each identical pair (2,3), (4,5), (6,7)
+ -> among the same 8 feasible Q4 subsets:
+      MAXNOV = maximum pairwise gradient novelty
+      MINNOV = minimum pairwise gradient novelty
+ -> seal both schedules
+ -> reset two identical SmallCNNs and train on the fixed schedules
+```
+
+Frozen results:
+
+- novelty manipulation mean: **+0.231634**, SE0.002623, 95% CI [+0.226269,+0.236999], p4.12e-37, 30/30 positive;
+- standardized reference hardness: **-0.009100 SD**, 90% CI [-0.013276,-0.004924], both TOST p<3e-26, frozen ±0.10 margin passed;
+- reference raw selected-loss difference: -0.001248 CE;
+- heldout mean MAXNOV-MINNOV: **+4.66929 pp**, SE0.72486 pp, 95% CI **[+3.18679,+6.15180]**, p2.389e-7, 26/30 positive;
+- clean effect secondary: **-1.75525 pp**;
+- p10/minimum secondary: +5.48908/+3.79481 pp, not multiplicity-controlled tail claims.
+
+Independent archive audit verified six evaluation ZIP digests, 30 schedule hashes, 60 checkpoint file/tensor digests, 2,400 reference-step rows and 4,800 environment rows. Environment reaggregation maximum error was 1.25e-16.
+
+### Remaining competing explanation
+
+Post-hoc, the seven known geometric environment parameters (rotation, x/y translation, blur, contrast, brightness, noise) were standardized across the 64 training environments. Mean selected-set pairwise parameter distance was:
+
+- MAXNOV: 3.97085;
+- MINNOV: 3.47815;
+- difference: **+0.492697**, SE0.009559, 95% CI [+0.473147,+0.512246], 30/30 positive.
+
+Thus the present treatment changes both model-conditioned gradient novelty and physical transformation diversity. The frozen PASS is valid for the preregistered schedule intervention, but the strongest gradient-specific causal wording is not yet justified. The earlier finding that gradient-novel selection outperformed parameter-novel selection weakens a pure parameter-distance account, but does not remove this within-intervention covariate shift.
+
+See [LOSS_STRATIFIED_NONREDUNDANCY_RESULT.md](LOSS_STRATIFIED_NONREDUNDANCY_RESULT.md).
 
 ## Finite-budget mechanism status
 
@@ -25,33 +65,37 @@ Five preregistered n=30 Q-scaling blocks are complete:
 | Digits geometric / MLP #1 | +2.034 pp | 1.06e-7 | exact | strong |
 | Digits geometric / MLP #2 fresh | +2.086 pp | 5.16e-7 | exact | strong replication |
 | Digits geometric / SmallCNN | +1.265 pp | 0.001548 | exact | architecture replication within Digits |
-| FashionMNIST / Tiny Transformer | +0.314 pp | 0.027264 | exact | cross-task support, but two-sided CI crosses zero |
+| FashionMNIST / Tiny Transformer | +0.314 pp | 0.027264 | exact | cross-task support, two-sided CI crosses zero |
 | CIFAR-10 / ResNet-20 | **+0.1168 pp** | **0.003804** | exact | strong larger-task cross-task replication |
 
-The common frozen statistic compares low subset coverage with high subset coverage. **Strict monotonicity is not a universal law.** SmallCNN had Q12 > Q8 and Fashion had Q6 > Q4. CIFAR happened to show a monotone mean curve Q2>Q4>Q6>Q8 in its fresh block.
+Strict monotonicity is not a universal law. Q=K identity is a necessary implementation control, not causal proof. CIFAR is stronger than SmallCNN under a post-hoc non-Q=K sensitivity because the low-Q versus Q6 contrast remains positive with a two-sided interval just above zero.
 
-Q=K identity is a necessary implementation control: when every candidate contributes in the same order, the two selectors must collapse to the same update. It should not be treated as causal-mediation proof by itself. The CIFAR post-hoc sensitivity is important because the low-Q advantage remains positive relative to Q6 even after Q8 is removed; the analogous SmallCNN sensitivity does not.
-
-Current mechanism statement:
+Current mechanism picture:
 
 ```text
 binding subset-update budget
-    + hard, model-conditioned non-redundant candidate gradients
-    -> different allocation across unresolved learning directions
-    -> changed optimization trajectory / learned function
-    -> task/architecture-dependent performance expression
+    -> selector freedom among hard candidates
+    -> model-conditioned allocation differs
+    -> optimization trajectory / learned function differs
+    -> architecture/task-dependent performance expression
 ```
 
-The first arrow is increasingly well supported as a finite-budget phenomenon, but the phrase “coverage of unresolved directions” remains a working mechanistic interpretation rather than a directly identified causal mediator.
+Issue #80 further supports:
 
-See [CIFAR_BUDGET_SCALING_RESULT.md](CIFAR_BUDGET_SCALING_RESULT.md), [CNN_BUDGET_SCALING_RESULT.md](CNN_BUDGET_SCALING_RESULT.md), [FASHION_BUDGET_SCALING_RESULT.md](FASHION_BUDGET_SCALING_RESULT.md), and [THEORETICAL_FRAMEWORK.md](THEORETICAL_FRAMEWORK.md).
+```text
+fixed Q + matched reference hardness strata
+    + schedule chosen for high versus low reference gradient nonredundancy
+    -> large shifted heldout difference
+```
+
+but the high-novelty schedule also changes physical transformation diversity. The next test must orthogonalize these two quantities.
 
 ## Other established results within tested regimes
 
 | Topic | Evidence | Current conclusion |
 |---|---|---|
 | Structured Digits geometric shifts | MLP and SmallCNN paired experiments | Hardness plus gradient novelty can improve held-out mean performance over loss-hard under tested structured shifts |
-| Model-conditioned diversity | Gradient novelty versus transformation-parameter novelty | Model-conditioned signatures contain useful information beyond physical parameter distances in the tested MLP |
+| Model-conditioned versus parameter diversity | Gradient novelty versus transformation-parameter novelty | Model-conditioned signatures contain useful information beyond physical parameter distances in the tested MLP, but Issue #80 shows the two can still covary strongly |
 | Optimizer replication | Independently tuned AdamW and SGD+momentum | Effect is not explained by AdamW alone in the tested MLP |
 | RNG candidate compression | Prefix/compression sweeps | Moderate prefiltering can reduce signature evaluations; aggressive compression loses tail coverage |
 | Learned RNG relevance | Original and shifted-coordinate generators | Relevant RNG coordinates can be learned using training gradients; stale fingerprint transfer fails |
@@ -64,7 +108,7 @@ See [CIFAR_BUDGET_SCALING_RESULT.md](CIFAR_BUDGET_SCALING_RESULT.md), [CNN_BUDGE
 
 The prospective raw-rank direction record remains a fixed-parameterization condition-average marker, not a calibrated per-run gate. Function-preserving intervention changed raw effective rank while predictions stayed identical. Channel-standardized rank did not rescue the mediator theory: in fresh #38, benefit attenuation replicated but standardized-rank attenuation was -0.00271, one-sided p0.5063.
 
-Thus raw/standardized representation rank should not be treated as the causal state variable. The next mediator needs to be functionally intrinsic, prospective, training-only where possible, and coupled to the budget effect across tasks.
+Thus raw/standardized representation rank should not be treated as the causal state variable. The next mediator needs to be functionally intrinsic, prospective, training-only where possible, and coupled to the budget/direct-intervention effect across tasks.
 
 ## Negative results and mechanism boundaries
 
@@ -72,28 +116,26 @@ More candidate seeds are not monotonically better; worst-only selection can dama
 
 The structured-versus-nuisance matching program repeatedly failed calibration/support overlap, and the matched near-clean #59 test returned **NO SHARED REPLICATION**. Reusable-factor causality remains unproven.
 
-The MLP full-minus-clean effect replicated on reserve images but failed in SmallCNN while full performance stayed positive. Therefore a universal shift-strength conversion law is rejected. Q curves are also not universally monotone.
+The MLP full-minus-clean effect replicated on reserve images but failed in SmallCNN while full performance stayed positive. A universal shift-strength conversion law is rejected. Q curves are not universally monotone.
 
-Q=K disappearance establishes that selector freedom vanishes at full candidate coverage, but not that gradient non-redundancy is itself the causal ingredient. The next direct test should hold Q and hardness structure fixed while actively reversing gradient redundancy.
+Issue #80 provides strong fixed-Q intervention evidence but does **not** isolate gradient novelty from known physical transformation diversity. Therefore “gradient novelty is the unique causal mediator” remains too strong.
 
-CIFAR primary and Q-scaling tail differences are secondary/multiplicity-sensitive; confirmed tail safety remains open.
+CIFAR primary and Q-scaling tail differences, and Issue #80 p10/minimum differences, are secondary/multiplicity-sensitive; confirmed tail safety remains open.
 
 ## Execution and uncertainty
 
-The CIFAR Q-scaling recovery is documented because the original five-replicate shard 60-64 exceeded a 180-minute workflow limit before held-out evaluation. The recovery preserved exactly 25 completed sealed reps, rejected the entire unsealed partial shard, retrained only reps60-64 in individual jobs under unchanged scientific code, then required a global 240-state seal before evaluation.
+The CIFAR Q-scaling recovery preserved 25 completed sealed reps, rejected the unsealed partial shard, retrained only reps60-64 under unchanged code and required a global240-state seal before evaluation. Validation verified240 checkpoints,30 Q8 identity pairs and7680 environment rows with max reaggregation error0.0.
 
-Recovery validation verified 240 checkpoints, 30 Q8 training identity pairs and 7680 environment rows with maximum environment reaggregation error 0.0. Protocol hash: `e388d13d5890e8b60e939f085403763d5065360bd3cdaecc7aa05de510f144d1`.
+Issue #80 enforced two separate global barriers: all 30 reference schedules were sealed before any intervention arm trained, and all60 intervention states were sealed before any heldout environment was constructed.
 
-The earlier CIFAR single-thread hosted-CPU audit returned **DRIFT PERSISTS**; bitwise cross-hardware hosted-CPU reproducibility remains unestablished. Q-scaling comparisons are paired within replicate and do not constitute a cross-hardware bitwise claim.
-
-The paired training runs—not held-out environments—are the statistical replicate units. Confidence intervals are conditional on the fixed dataset subsets and environment samples.
+The earlier CIFAR hosted-CPU audit returned **DRIFT PERSISTS**; bitwise cross-hardware reproducibility remains unestablished. Paired training runs—not heldout environments—are the statistical replicate units. Confidence intervals are conditional on fixed dataset subsets and environment samples.
 
 ## Public claim boundary and next work
 
 Safe current wording:
 
-> Gradient-aware selection of stochastic training environments can improve held-out mean performance in some structured regimes. Five preregistered Q-scaling blocks support a finite-budget subset-allocation explanation: three strong Digits/geometric blocks, a borderline FashionMNIST/Tiny Transformer block, and a strong CIFAR-10/ResNet-20 block. In all blocks the methods become exactly identical when all K candidates contribute. CIFAR additionally shows positive exploratory attenuation after removing the exact-zero Q=K endpoint. These results support finite selector freedom as an important upstream condition while leaving the causal role of gradient non-redundancy and the downstream learned-function mediator unresolved.
+> Gradient-aware selection of stochastic training environments can improve held-out mean performance in several tested structured regimes. Five preregistered Q-scaling blocks support a finite-budget subset-allocation explanation. A separate fixed-Q shared-reference intervention shows that, within tightly matched loss-rank strata, schedules maximizing reference gradient novelty substantially outperform schedules minimizing it. This is direct intervention support for the usefulness of a nonredundancy-selected schedule. However those schedules also differ strongly in known physical transformation diversity, so gradient novelty has not yet been isolated as the unique causal variable; the downstream learned-function mediator also remains unresolved.
 
-Do not claim universal task validity, a universal monotone Q curve, universal seed quality/controller settings, causal rank laws, reliable per-run gating, confirmed CIFAR tails, large-Transformer generality, cross-hardware bitwise reproducibility, or GPU efficiency.
+Do not claim universal task validity, a universal monotone Q curve, universal seed quality/controller settings, causal rank laws, gradient-specific uniqueness from Issue #80 alone, reliable per-run gating, confirmed CIFAR/tail safety, large-Transformer generality, cross-hardware bitwise reproducibility, or GPU efficiency.
 
-The highest-value next mechanism test is **loss-stratified gradient-redundancy reversal**: keep Q and loss-rank strata fixed, then prospectively choose maximally non-redundant versus maximally redundant subsets. This directly tests non-redundancy without relying on Q=K identity. In parallel, downstream function-space diagnostics should replace further rank-normalization searches.
+The highest-value next test is **physical-parameter-diversity-matched gradient-novelty reversal** under the same shared-reference, fixed-Q framework. It should match both reference hardness and the known seven-dimensional transformation diversity before maximizing versus minimizing gradient novelty. In parallel, downstream function-space diagnostics should replace further rank-normalization searches.
