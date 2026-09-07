@@ -1,48 +1,50 @@
 # Research status
 
-Updated 2026-09-06. A finding is **supported** only within its comparison, task and statistical rule. Negative results and preregistered decisions are retained; a PASS label is not universal or causal proof.
+Updated 2026-09-07. A finding is **supported** only within its comparison, task and statistical rule. Negative results and preregistered decisions are retained; a PASS label is not universal or causal proof.
 
 ## Latest completed evidence
 
 | Experiment | Frozen decision | Evidence and scope |
 |---|---|---|
-| Dual-evaluation transfer specificity, #59, 30 pairs | **NO SHARED REPLICATION** | Shared benefit +0.78165 pp, p0.099776; specificity +0.00674 pp, p0.425828. |
-| Fixed-dose MLP audit, #61, 30 pairs | **DOSE-DEPENDENT BENEFIT PASS** | Full +2.84223 pp; full-minus-clean +1.62125 pp, one-sided p0.048974; interaction initially borderline. |
-| Reserve-image MLP replication, #64, 30 pairs | **DOSE-DEPENDENT BENEFIT REPLICATES ON RESERVE IMAGES** | Full +2.27370 pp, p1.75e-8; full-minus-clean +2.90556 pp, p0.001726. Intermediate strengths were negative. |
+| Reserve-image MLP replication, #64, 30 pairs | **DOSE-DEPENDENT BENEFIT REPLICATES ON RESERVE IMAGES** | Full +2.27370 pp, p1.75e-8; full-minus-clean +2.90556 pp, p0.001726. Intermediate strengths negative. |
 | SmallCNN regime audit, #67, 30 pairs | **CNN FULL EFFECT REPLICATES / CLEAN INTERACTION DOES NOT** | Full +2.41698 pp, p2.34e-5; clean +3.43634 pp; full-minus-clean -1.01937 pp, p0.792. |
-| SmallCNN Q-scaling, #70, 30 pairs | **CNN FINITE-BUDGET COVERAGE REPLICATES** | Low-Q minus high-Q attenuation +1.26494 pp, 95% CI [+0.46325,+2.06663], p0.001548; Q16 exact state/metric identity. |
-| FashionMNIST Tiny Transformer Q-scaling, #73, 30 pairs | **FASHION TRANSFORMER FINITE-BUDGET COVERAGE REPLICATES** | Low-Q minus high-Q attenuation +0.31375 pp, 95% CI [-0.00651,+0.63401], preregistered one-sided p0.027264; Q8 exact identity. First direct cross-task Q-scaling support, but statistically borderline. |
+| SmallCNN Q-scaling, #70, 30 pairs | **CNN FINITE-BUDGET COVERAGE REPLICATES** | attenuation +1.26494 pp, 95% CI [+0.46325,+2.06663], p0.001548; Q16 exact identity. |
+| SmallCNN endpoint sensitivity, post-hoc | descriptive only | Excluding Q16: low mean(Q2,Q4)-Q12 +0.47608 pp, 95% CI [-0.53741,+1.48956], p0.1723. The primary PASS does not establish non-full-Q attenuation by itself. |
+| FashionMNIST Tiny Transformer Q-scaling, #73, 30 pairs | **FASHION TRANSFORMER FINITE-BUDGET COVERAGE REPLICATES** | attenuation +0.31375 pp, 95% CI [-0.00651,+0.63401], preregistered one-sided p0.027264; Q8 exact. Borderline cross-task support. |
+| CIFAR-10 ResNet-20 Q-scaling, #76, 30 pairs | **CIFAR RESNET FINITE-BUDGET COVERAGE REPLICATES** | attenuation **+0.11679 pp**, 95% CI **[+0.03353,+0.20005]**, p**0.003804**; Q8 exact identity. Strong larger-task cross-task replication. |
+| CIFAR endpoint sensitivity, post-hoc | descriptive only | Excluding Q8: low mean(Q2,Q4)-Q6 **+0.09682 pp**, 95% CI **[+0.00324,+0.19040]**, p0.02152. Unlike SmallCNN, attenuation remains positive without the forced Q=K endpoint. |
 
-The full-strength positive effect survives MLP and SmallCNN, but full-vs-clean interaction is not architecture-general. The stronger upstream mechanism is finite-budget subset allocation.
+The full-strength positive effect survives MLP and SmallCNN, but the full-vs-clean interaction is not architecture-general. The strongest common upstream evidence is now finite-budget subset allocation.
 
 ## Finite-budget mechanism status
 
-Four preregistered n=30 Q-scaling blocks now exist:
+Five preregistered n=30 Q-scaling blocks are complete:
 
 | Task / model | Frozen attenuation | One-sided p | Q=K identity | Interpretation |
 |---|---:|---:|---|---|
 | Digits geometric / MLP #1 | +2.034 pp | 1.06e-7 | exact | strong |
 | Digits geometric / MLP #2 fresh | +2.086 pp | 5.16e-7 | exact | strong replication |
 | Digits geometric / SmallCNN | +1.265 pp | 0.001548 | exact | architecture replication within Digits |
-| FashionMNIST / Tiny Transformer | +0.314 pp | 0.027264 | exact | first cross-task directional replication; two-sided CI crosses zero |
+| FashionMNIST / Tiny Transformer | +0.314 pp | 0.027264 | exact | cross-task support, but two-sided CI crosses zero |
+| CIFAR-10 / ResNet-20 | **+0.1168 pp** | **0.003804** | exact | strong larger-task cross-task replication |
 
-The common frozen statistic compares low subset coverage with high subset coverage; **strict monotonicity was never required and is not observed**. SmallCNN had Q12 > Q8, and Fashion had Q6 > Q4.
+The common frozen statistic compares low subset coverage with high subset coverage. **Strict monotonicity is not a universal law.** SmallCNN had Q12 > Q8 and Fashion had Q6 > Q4. CIFAR happened to show a monotone mean curve Q2>Q4>Q6>Q8 in its fresh block.
 
-Exact Q=K identity is especially important: in all four Q-scaling experiments, when every candidate contributes, loss-hard and gradnov produce exactly the same learned model under the controlled deterministic execution. This supports the necessity of selector freedom under a binding subset budget.
+Q=K identity is a necessary implementation control: when every candidate contributes in the same order, the two selectors must collapse to the same update. It should not be treated as causal-mediation proof by itself. The CIFAR post-hoc sensitivity is important because the low-Q advantage remains positive relative to Q6 even after Q8 is removed; the analogous SmallCNN sensitivity does not.
 
 Current mechanism statement:
 
 ```text
 binding subset-update budget
     + hard, model-conditioned non-redundant candidate gradients
-    -> different coverage of unresolved learning directions
+    -> different allocation across unresolved learning directions
     -> changed optimization trajectory / learned function
     -> task/architecture-dependent performance expression
 ```
 
-Within Digits/geometric the finite-budget dependence is strongly architecture-robust. FashionMNIST/Tiny Transformer adds preregistered cross-task support, but the attenuation estimate is weak enough that it should be described as **borderline cross-task evidence**, not universal confirmation.
+The first arrow is increasingly well supported as a finite-budget phenomenon, but the phrase “coverage of unresolved directions” remains a working mechanistic interpretation rather than a directly identified causal mediator.
 
-See [CNN_BUDGET_SCALING_RESULT.md](CNN_BUDGET_SCALING_RESULT.md), [FASHION_BUDGET_SCALING_RESULT.md](FASHION_BUDGET_SCALING_RESULT.md), [THEORETICAL_FRAMEWORK.md](THEORETICAL_FRAMEWORK.md), and the preceding experiment documents.
+See [CIFAR_BUDGET_SCALING_RESULT.md](CIFAR_BUDGET_SCALING_RESULT.md), [CNN_BUDGET_SCALING_RESULT.md](CNN_BUDGET_SCALING_RESULT.md), [FASHION_BUDGET_SCALING_RESULT.md](FASHION_BUDGET_SCALING_RESULT.md), and [THEORETICAL_FRAMEWORK.md](THEORETICAL_FRAMEWORK.md).
 
 ## Other established results within tested regimes
 
@@ -70,26 +72,28 @@ More candidate seeds are not monotonically better; worst-only selection can dama
 
 The structured-versus-nuisance matching program repeatedly failed calibration/support overlap, and the matched near-clean #59 test returned **NO SHARED REPLICATION**. Reusable-factor causality remains unproven.
 
-The MLP full-minus-clean effect replicated on reserve images but failed in SmallCNN while full performance stayed positive. Therefore a universal shift-strength conversion law is rejected. Q curves are also not universally monotone. The supported budget claim is the preregistered low-vs-high contrast plus exact Q=K disappearance.
+The MLP full-minus-clean effect replicated on reserve images but failed in SmallCNN while full performance stayed positive. Therefore a universal shift-strength conversion law is rejected. Q curves are also not universally monotone.
 
-CIFAR primary p10/minimum differences were positive but not Holm-significant; confirmed tail safety remains open.
+Q=K disappearance establishes that selector freedom vanishes at full candidate coverage, but not that gradient non-redundancy is itself the causal ingredient. The next direct test should hold Q and hardness structure fixed while actively reversing gradient redundancy.
+
+CIFAR primary and Q-scaling tail differences are secondary/multiplicity-sensitive; confirmed tail safety remains open.
 
 ## Execution and uncertainty
 
-The CIFAR single-thread hosted-CPU audit returned **DRIFT PERSISTS**; bitwise cross-hardware hosted-CPU reproducibility is not established.
+The CIFAR Q-scaling recovery is documented because the original five-replicate shard 60-64 exceeded a 180-minute workflow limit before held-out evaluation. The recovery preserved exactly 25 completed sealed reps, rejected the entire unsealed partial shard, retrained only reps60-64 in individual jobs under unchanged scientific code, then required a global 240-state seal before evaluation.
 
-Issue #70 SmallCNN verification matched six ZIP digests, 300 checkpoint hashes/state digests, Q16 parameter tensors and 24,000 environment rows. Issue #73 Fashion verification matched six ZIP digests, all 240 checkpoint file hashes, all 240 canonical state-tensor digests, archived source hashes, Q8 tensors, aggregate rows, and independently recomputed paired statistics.
+Recovery validation verified 240 checkpoints, 30 Q8 training identity pairs and 7680 environment rows with maximum environment reaggregation error 0.0. Protocol hash: `e388d13d5890e8b60e939f085403763d5065360bd3cdaecc7aa05de510f144d1`.
 
-Fashion hosted shards used AMD EPYC 9V74, AMD EPYC 7763 and Intel Xeon Platinum 8573C with PyTorch2.10.0+cpu and four threads. No wall-clock or cross-hardware bitwise claim is made. The Fashion workflow did not archive per-environment heldout rows, so its heldout aggregation cannot be independently reconstructed from archived CSVs alone without rerunning the fixed data/generator; this is an evidence-archive limitation.
+The earlier CIFAR single-thread hosted-CPU audit returned **DRIFT PERSISTS**; bitwise cross-hardware hosted-CPU reproducibility remains unestablished. Q-scaling comparisons are paired within replicate and do not constitute a cross-hardware bitwise claim.
 
-The paired training runs—not heldout environments—are the statistical replicate units. Confidence intervals are conditional on the fixed dataset subsets and environment samples.
+The paired training runs—not held-out environments—are the statistical replicate units. Confidence intervals are conditional on the fixed dataset subsets and environment samples.
 
 ## Public claim boundary and next work
 
 Safe current wording:
 
-> Gradient-aware selection of stochastic training environments can improve held-out mean performance in some structured regimes. Three strong preregistered Q-scaling blocks within Digits/geometric and one preregistered but borderline FashionMNIST/Tiny Transformer block support a finite-budget subset-allocation explanation: the low-Q versus high-Q contrast is positive under the frozen rules, and the methods become exactly identical when all K candidates contribute. This supports selector freedom as a necessary component of the observed effect while leaving the downstream function-space mediator unresolved.
+> Gradient-aware selection of stochastic training environments can improve held-out mean performance in some structured regimes. Five preregistered Q-scaling blocks support a finite-budget subset-allocation explanation: three strong Digits/geometric blocks, a borderline FashionMNIST/Tiny Transformer block, and a strong CIFAR-10/ResNet-20 block. In all blocks the methods become exactly identical when all K candidates contribute. CIFAR additionally shows positive exploratory attenuation after removing the exact-zero Q=K endpoint. These results support finite selector freedom as an important upstream condition while leaving the causal role of gradient non-redundancy and the downstream learned-function mediator unresolved.
 
 Do not claim universal task validity, a universal monotone Q curve, universal seed quality/controller settings, causal rank laws, reliable per-run gating, confirmed CIFAR tails, large-Transformer generality, cross-hardware bitwise reproducibility, or GPU efficiency.
 
-The highest-value next budget falsification is **CIFAR-10 / ResNet-20 Q-scaling**, using the existing CIFAR protocol with K/Q and the attenuation statistic frozen before outcomes. In parallel, the downstream mediator should be tested with training-only function-space diagnostics rather than new rank normalizations.
+The highest-value next mechanism test is **loss-stratified gradient-redundancy reversal**: keep Q and loss-rank strata fixed, then prospectively choose maximally non-redundant versus maximally redundant subsets. This directly tests non-redundancy without relying on Q=K identity. In parallel, downstream function-space diagnostics should replace further rank-normalization searches.

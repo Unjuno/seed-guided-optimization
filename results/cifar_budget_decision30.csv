@@ -1,0 +1,2 @@
+decision,n,q8_identity_pass,q8_mismatch_count,coverage_pass,mean_benefit_low,mean_benefit_high,mean_benefit_attenuation,benefit_attenuation_se,benefit_attenuation_ci95_low,benefit_attenuation_ci95_high,benefit_attenuation_p_one_sided
+CIFAR RESNET FINITE-BUDGET COVERAGE REPLICATES,30,True,0,True,0.001367534722222228,0.00019965277777777847,0.0011678819444444497,0.0004071004094117844,0.000335268119791109,0.0020004957690977904,0.003804083699569291
