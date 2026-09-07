@@ -46,6 +46,7 @@ def validate_archives(root: Path) -> None:
     covered = []
     source0 = None
     split0 = None
+    summarizer_digest = sha256(Path(__file__))
     for apath in arm_manifests:
         shard = apath.parent
         arm = json.loads(apath.read_text())
@@ -77,6 +78,9 @@ def validate_archives(root: Path) -> None:
             path = shard / "source" / name
             if not path.exists() or sha256(path) != digest:
                 raise ValueError(f"archived source hash mismatch: {name}")
+        archived_summarizer = shard / "source" / Path(__file__).name
+        if not archived_summarizer.exists() or sha256(archived_summarizer) != summarizer_digest:
+            raise ValueError("archived summarizer hash mismatch")
     if sorted(covered) != list(REPS):
         raise ValueError("manifest replicate coverage mismatch")
 
