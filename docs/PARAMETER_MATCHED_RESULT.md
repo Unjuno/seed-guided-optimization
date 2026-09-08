@@ -36,12 +36,13 @@ still leaves their allocation among coordinates imbalanced.
 | brightness | -0.148571 | [-0.173747,-0.123395] |
 
 These variance units are dimensionless squared standardized-coordinate units.
-All7 coordinate means and all7 variances are retained in the exploratory CSV;
-these14 descriptions were not registered confirmatory endpoints and are not
+All seven coordinate means and seven variances are reported in
+[the exploratory summary](../results/parameter_composition_summary_posthoc.csv).
+These fourteen descriptions were not registered confirmatory endpoints and are not
 independent replications. Coordinate means also differ. No particular coordinate
 has been identified as the unique cause of the performance difference.
 
-**Implication:** Issue83 rules out scalar hardness and scalar total-diversity imbalance
+**Implication:** Issue83 establishes balance for scalar hardness and scalar total-diversity
 within its margins, not all environmental-factor differences. Gradient-based selection
 may prioritize particular useful physical factors. Do not call it uniquely gradient-caused.
 
@@ -49,19 +50,19 @@ may prioritize particular useful physical factors. Do not call it uniquely gradi
 
 ### Variable table
 
-| Symbol | Meaning | SI unit | Definition | Domain/assumptions | Type |
+| Symbol | Meaning (Japanese) | SI unit | Definition | Domain/assumptions | Type |
 |---|---|---|---|---|---|
-| q | selected-environment count |1| number of rows | positive integer, here4 | scalar integer |
-| p | coordinate count |1| number of columns | positive integer | scalar integer |
-| Z | standardized selected coordinates |1| rows z_i | real q by p matrix | matrix |
-| z_i | selected coordinate vector |1| row i of Z | i from1 to q | row vector |
-| O | coordinate rotation |1| orthogonal matrix | O O^T = O^T O = I | matrix |
-| I | identity |1| p by p identity | same dimension as O | matrix |
-| D_ij | pairwise Euclidean distance |1| norm(z_i-z_j) | nonnegative | scalar |
-| Z' | rotated coordinates |1| Z O | same size as Z | matrix |
-| j | coordinate index |1| column index |1 through p|scalar integer|
-| i | row index |1| row index |1 through q|scalar integer|
-| v_j | population coordinate variance |1| mean squared centered coordinate | nonnegative | scalar |
+| q | 選択環境数 |1| number of rows | positive integer, here4 | scalar integer |
+| p | 座標数 |1| number of columns | positive integer | scalar integer |
+| Z | 標準化された選択環境座標 |1| rows z_i | real q by p matrix | matrix |
+| z_i | 行iの座標ベクトル |1| row i of Z | i from1 to q | row vector |
+| O | 直交座標変換 |1| orthogonal matrix | O O^T = O^T O = I | matrix |
+| I | 単位行列 |1| p by p identity | same dimension as O | matrix |
+| D_ij, D'_ij | 元座標・変換後の点間距離 |1| Euclidean norms of row differences | nonnegative | scalar |
+| Z' | 変換後の座標 |1| Z O | same size as Z | matrix |
+| i, j | 比較する行番号 |1| row indices |1 through q|scalar integers|
+| k | 座標番号 |1| column index |1 through p|scalar integer|
+| v_k | 座標ごとの母分散 |1| mean squared centered coordinate | nonnegative | scalar |
 
 For any two rows, orthogonality gives
 
@@ -101,5 +102,6 @@ AMD EPYC7763/9V74 and Intel Xeon6973P-C; same-repetition arm comparisons share a
 Clock snapshots are metadata, not fixed-frequency benchmarks.
 
 Recompute: `python experiments/check_parameter_matched_evidence.py`.
-The follow-up is Issue86: a fresh four-arm comparison of gradient scoring versus
-translation-variance-only scoring, with unchanged scalar matching and a reference baseline.
+The completed follow-up is [Issue86 spatial-allocation control](SPATIAL_ALLOCATION_RESULT.md):
+a fresh four-arm comparison of gradient scoring versus translation-variance-only
+scoring, with unchanged scalar matching and a descriptive reference baseline.
