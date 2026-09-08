@@ -1,0 +1,2 @@
+decision,n,all_gates_pass,gradient_performance_pass,spatial_performance_pass,protocol_hash,states_checked,environment_rows,max_environment_error
+SPATIAL ALLOCATION ALTERNATIVE SUPPORTED,30,True,True,True,953adbf061f4cc3bbe9600a0ca9384ed887f64a77c0136de1b56d24c62814b6b,150,12000,0.0
