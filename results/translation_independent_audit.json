@@ -1,0 +1,19 @@
+{
+  "issue": 91,
+  "run_id": 34251284833,
+  "artifact_id": 10066386657,
+  "artifact_sha256": "58a3677ca3e41ac6b0f41d45ff5ad95121def8c541cd02bcc6893b6baecd3f45",
+  "decision": "OVERLAP-RESTRICTED TRANSLATION-BALANCED NOVELTY SUPPORT",
+  "states_checked": 150,
+  "schedules_checked": 30,
+  "subset_pairs_reconstructed": 4800,
+  "reference_subset_rows": 201600,
+  "environment_rows": 12000,
+  "max_diagnostic_reconstruction_error": 0.0,
+  "max_coordinate_reconstruction_error": 0.0,
+  "max_environment_reaggregation_error": 0.0,
+  "pooled_support": 0.9537500000000001,
+  "min_replicate_support": 0.9125,
+  "overlap_scientific_source_git_blob": "dc757787938ded2da6678a7e8272faec7b95e3bc",
+  "scope": "Read-only archive and statistical audit; no retraining or raw-image inference. Paired uncertainty is conditional, not total."
+}

@@ -1,143 +1,64 @@
-# Theoretical framework: finite-budget allocation and unresolved mediation
+# Theoretical framework: subset allocation, overlap and unresolved mediation
 
-Updated2026-09-08. This is a working causal model, not a theorem that SGO improves generalization.
+Updated2026-09-09. This is a working theory, not a generalization theorem.
 
-## 1. Separate three questions
+## 1. Distinguish procedural effects from mediation
 
-**Algorithmic effect:** does replacing one environment-selection procedure with another
-change the learned function and heldout performance under a fixed protocol?
+Seeds index environments; no intrinsic good seed classes are assumed. Controlled comparisons support some changes of environment-selection policy. They do not automatically identify gradient novelty as the unique cause or identify a downstream learned-function mediator.
 
-**Mechanism specificity:** is that difference specifically attributable to gradient
-nonredundancy, rather than correlated environment properties or other schedule changes?
+The five budget studies and fixed-Q schedule interventions answer different questions. At full candidate adoption, identical initial/optimizer/RNG states, ordered inputs and deterministic operations imply identical updates. Induction over steps preserves identity provided selector computations have no unequal side effects. This is an implementation control, not an explanation of smaller-subset benefits or a guarantee across hardware.
 
-**Downstream mediation:** through what learned functional change does the schedule
-produce a performance difference?
+## 2. Evidence progression
 
-The experiments support selected algorithmic contrasts. Mechanism specificity and
-downstream mediation are not fully identified. Seed integers serve as environment
-indices; no intrinsic semantic classes or universal seed-quality ordering are assumed.
+| Study | What is controlled | What is observed | What remains unresolved |
+|---|---|---|---|
+| Five Q-scaling blocks | paired schedules/initialization; varying adopted count | positive registered low-minus-high contrasts with varying strength | causal role of geometry; structural zero endpoint |
+| Issue80 | fixed count and reference hardness strata | high-low+4.669 pp | total physical diversity also shifts |
+| Issue83 | reference hardness and scalar total diversity | high-low+3.969922 pp | individual factor allocation shifts |
+| Issue86 | same constraints, gradient versus translation scoring | positive contrasts from both scoring procedures | translation-only scoring also changes gradient geometry |
+| Issue89 | additionally match translation in every step | strict feasibility FAIL; no heldout test | lack of matched support in some states |
+| Issue91 | three-summary matching on supported steps, identical fallback otherwise | matched+2.040585 pp and control+3.070818 pp; conjunction PASS | approximate balance, other factors, reduced manipulation and downstream mediation |
 
-## 2. What the finite-budget experiments establish
+These are offline shared-reference schedule interventions; their high-low differences are not the original online gradnov-over-loss-hard effect.
 
-| Symbol | Meaning (Japanese) | SI unit | Definition | Domain/assumptions | Type |
-|---|---|---|---|---|---|
-| K | 候補環境数 |1| number available at a step |positive integer|scalar integer|
-| Q | 採用環境数 |1| number contributing to the update |integer from1 through K|scalar integer|
+## 3. Available support changes the question
 
-Five preregistered30-repetition budget blocks have positive frozen low-minus-high
-contrasts: Digits/MLP+2.034 and+2.086 pp,Digits/SmallCNN+1.265 pp,
-FashionMNIST/Tiny Transformer+0.314 pp,and CIFAR/ResNet-20+0.11679 pp.
-The Fashion two-sided95% interval crosses zero; its support is borderline.
+A comparison requiring every reference state to contain a suitable matched pair may be infeasible. Issue89's worst pilot step had14hardness/diversity-eligible pairs, yet minimum translation difference.579288 exceeded the registered maximum.50. The failure is not evidence of zero performance benefit.
 
-At Q=K the selectors have no subset-choice freedom. Under identical starting states,
-ordered inputs, preprocessing, optimizer states and deterministic numerical execution,
-the two complete-subset updates are identical. Repeating the same update from the same
-state then preserves equality at every subsequent step. This argument requires that
-selector computations do not introduce unequal model/optimizer/RNG side effects.
-It does not guarantee equality across hardware/backend changes.
+Issue91 retained a fixed.20translation caliper and used identical reference top4 subsets in both matched arms at unsupported steps. There were111fallback steps among2400, with all updates and adopted counts retained. The causal procedural target is the complete policy that intervenes only on available matched support. It is not a claim about all reference states or the unexecuted strict Issue89 design.
 
-Exact all-candidate identity is therefore an implementation control, not an independent
-proof of why smaller-subset performance improves. Removing the structurally zero
-endpoint post-hoc retains positive CIFAR attenuation but not an established SmallCNN
-contrast. The budget-response shape is not a universal monotone law.
+The original calibration FAIL remains recorded. Changing the policy required a new preregistration and fresh repetitions/environment seeds; it was not an outcome-dependent rescue of a failed performance test.
 
-## 3. Fixed-budget interventions strengthen the procedural evidence
+## 4. What the new positive result permits
 
-Issue80 fixes the adopted subset size while matching reference-loss strata. High
-reference-gradient-novelty schedules beat low-novelty schedules by+4.669 pp, but also
-increase scalar physical transformation diversity. This is not unique-gradient evidence.
+The matched high-minus-low effect is+2.040585 pp,95%CI[+.861808,+3.219362],p.000685123. The control matched only in hardness/total diversity gives+3.070818 pp,CI[+2.040397,+4.101239],p6.13693e-7. Both pass the registered conjunction and manipulation/equivalence gates.
 
-Issue83 additionally matches standardized reference hardness and scalar total physical
-diversity within frozen±0.05 calipers. Its high-minus-low benefit is+3.969922 pp,
-95% CI[+3.050617,+4.889226],one-sided p5.10e-10. The reference matching gates pass.
-The positive schedule contrast survives those two scalar balance constraints.
+Translation-score separation is reduced from.760933 to.021821; gradient-score separation is also reduced from.206506 to.100945. The translation equivalence90%CI[.017593,.026049] is inside±.20 but excludes zero. Equivalence within a tolerance is not exact equality. Rotation variance remains+.202555 and individual dx/dy variances redistribute even when their sum is balanced.
 
-But an audit reveals more x/y translation variance and less blur/noise/brightness
-variance in the high-gradient-novelty schedules. Matching average pairwise distance
-cannot ensure factor-specific composition balance. A complete mathematical counterexample,
-with variable definitions and unit checks, is in [the Issue83 result](PARAMETER_MATCHED_RESULT.md).
+Therefore the effect survives three scalar constraints over supported steps, but a unique-gradient cause still has not been isolated. Residual translation sensitivity, rotation/other factor changes and the relationship between reference and arm-state geometry remain possible explanations.
 
-## 4. A fresh test of the alternative
+The control-minus-matched performance difference has95%CI[-.457078,+2.517543]pp. Even a precise positive difference would not be a mediated fraction: the intervention's support and gradient-dose magnitude change too.
 
-Issue86 prospectively compares two schedule-pair families over the same feasible
-subsets and matching constraints. One family maximizes reference gradient-novelty
-separation. The other maximizes standardized x/y translation-variance separation
-WITHOUT using gradient novelty as the selection score.
+## 5. Mean pairwise novelty is not gradient-span dimension
 
-Both positive primary conditions reproduce in30 new repetitions:
+[Full derivation, variable table and counterexample](NOVELTY_COHERENCE_IDENTITY.md) establish an exact algebraic limitation. With unit-normalized head signatures and fixed subset size, their average pairwise1-cosine is a function of the squared norm of the mean normalized signature. Opposing vectors along one axis and a balanced set spanning two axes can have the same score.
 
-| Schedule contrast | Heldout mean difference | 95% CI |
-|---|---:|---|
-| Gradient high minus low |+3.852029 pp|[+2.927096,+4.776962]|
-| Translation-score high minus low |+1.768644 pp|[+0.580026,+2.957263]|
+This clarification distinguishes directional dispersion/cancellation from independent span. It does not prove cancellation is why performance improves, describe full-network AdamW updates, or negate observed benefits. Zero/sub-floor gradients require the general norm-floor identity, also derived in that note. The averaged intervention score is not identical to the original greedy minimum-distance-plus-hardness rule.
 
-This supports an alternative SCORING PROCEDURE, not a gradient-independent causal
-path. Translation-based selection also increases reference gradient novelty by0.105610.
-Gradient-based selection increases translation variance by0.616683. These variables
-remain jointly manipulated.
+Prior studies of gradient diversity (Yin et al.,AISTATS2018,arXiv:1706.05699) and gradient interference (Yu et al.,NeurIPS2020,arXiv:2001.06782) motivate distinguishing these objects; they do not establish the SGO mechanism.
 
-The descriptive difference between the two high-low contrasts is+2.083385 pp.
-Because they have different low baselines and redistribute other physical factors,
-this is not a mediated fraction, a unique-gradient-effect estimate, or a direct
-ranking of the two high schedules. In particular, translation-high superiority over
-the retained loss-hard reference is not established by its95% interval.
+## 6. Candidate explanation and retained falsifications
 
-See [the complete spatial result](SPATIAL_ALLOCATION_RESULT.md), including baseline
-contrasts, manipulation gates, all secondary endpoints and verification.
+A candidate theory is useful allocation of limited updates across model-conditioned error directions and reusable variation factors. Gradient signatures can guide that allocation without explicit physical-factor names, but a physical score can sometimes approximate part of it. Factor allocation and gradient geometry need not be rival, mutually exclusive causal descriptions.
 
-## 5. Revised candidate explanation
+Raw hidden effective rank is coordinate-dependent under function-preserving reparameterizations; standardized-rank budget mediation failed. These failures do not imply all representation effects are irrelevant. They reject those particular strong scalar-mediator interpretations.
 
-A useful hypothesis is that the selector allocates a limited number of updates to
-particular unresolved and reusable variation factors. Gradient signatures may serve
-as a model-conditioned way of discovering such factors without knowing their physical
-parameter names. An explicit physical score may sometimes approximate this allocation.
+Neither best one-step descent, random mean-gradient estimation, pure diversity nor accumulated gradient rank alone explains all recorded comparisons. MLP shift-specificity did not reproduce in SmallCNN; universal monotone budget/shift laws are unsupported. Tail safety, generality across datasets of the matched interventions and practical matched-cost value remain open.
 
-This hypothesis explains why total diversity alone need not suffice and why different
-selection procedures can be associated with useful learning. It is still a hypothesis:
-the experiments do not identify a unique physical factor, task-relevance quantity,
-internal feature change or gradient-geometry mediator.
+## 7. Next falsifiable distinction
 
-Three distinct statements must not be conflated:
+Measure and manipulate normalized directional coherence separately from raw update magnitude, independent span and task-relevant alignment, using a fixed model/optimizer and matched comparison budget. A positive scalar-novelty effect is insufficient to choose among them. Any new mediator claim needs a prospective intervention and cannot follow merely from correlation with these successful schedules.
 
-- not using gradient novelty to SCORE subsets;
-- not changing gradient geometry;
-- gradient geometry not MEDIATING the performance effect.
+## ERROR CHECK and scope
 
-Issue86 establishes the first for the translation selector. It does not establish
-the second or third. Both procedures still learn using gradients.
-
-## 6. Restrictions inherited from previous falsification
-
-Raw hidden effective rank is changed by function-preserving reparameterizations,
-so it is not an intrinsic functional mediator. It can remain a marker under a fixed
-parameterization. Standardized-rank budget coupling failed; additional post-hoc rank
-normalizations are not a justified causal explanation.
-
-Pure diversity and accumulated gradient rank are insufficient. Gradient novelty did
-not dominate random sampling for mean-gradient estimation, and loss-hard can produce
-a larger immediate loss decrease. Thus a pure one-step descent or estimator-variance
-account does not fully explain the recorded final-performance comparisons.
-
-MLP full-minus-clean specificity did not reproduce in SmallCNN. The structured/nuisance
-matching program did not identify reusable-factor causality. Tail safety, per-run
-controllers and universal cross-task validity remain open.
-
-## 7. Next discriminating experiment, not yet completed
-
-Independently establish whether feasible subset pairs can match reference hardness,
-scalar total diversity AND spatial allocation while preserving a gradient-novelty
-manipulation. Only then freeze a fresh confirmatory test. Failure of feasibility
-should stop interpretation rather than trigger heldout-driven threshold adjustment.
-
-Even that design would leave other factor distributions and downstream mediation
-unresolved. A credible theory must state exactly what is manipulated and balanced,
-not relabel any positive schedule contrast as proof of a favorite scalar mediator.
-
-## Evidence boundary / ERROR CHECK
-
-The current conclusions distinguish registered endpoints from post-hoc discovery,
-reference-state balance from balance along diverging training trajectories, high-low
-schedule contrasts from online gradnov/loss-hard comparisons, and structural identity
-from causal identification. Statistical repetition units are independent training
-blocks, not the many environment observations within each block. The reported errors
-are conditional on fixed images/environment pools; there is no general performance theorem.
+All reported empirical differences are linked to [the Issue91 result](OVERLAP_TRANSLATION_RESULT.md) or retained historical documents. Score algebra is an exact mathematical statement under its explicit assumptions; performance conclusions remain conditional empirical results. Steps and environments are not independent training replicates. Pinned software does not establish cross-hardware bitwise equality, and no total uncertainty or universal performance theorem has been supplied.
