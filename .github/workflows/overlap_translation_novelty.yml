@@ -1,0 +1,178 @@
+name: Overlap-restricted translation-balanced novelty
+on:
+  pull_request:
+    types: [opened, reopened]
+    branches: [main]
+    paths:
+      - 'experiments/overlap_translation_novelty.py'
+      - '.github/workflows/overlap_translation_novelty.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+env:
+  OMP_NUM_THREADS: '1'
+  MKL_NUM_THREADS: '1'
+  OPENBLAS_NUM_THREADS: '1'
+  NUMEXPR_NUM_THREADS: '1'
+jobs:
+  reference:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        start: [2200, 2205, 2210, 2215, 2220, 2225]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Pinned CPU dependencies
+        run: |
+          pip install torch==2.10.0 --index-url https://download.pytorch.org/whl/cpu
+          pip install numpy==2.3.5 pandas==2.2.3 scipy==1.17.0 scikit-learn==1.8.0
+      - run: python experiments/overlap_translation_novelty.py selftest
+      - name: Reference schedules only
+        run: python experiments/overlap_translation_novelty.py reference --start ${{ matrix.start }} --end $(( ${{ matrix.start }} + 5 )) --output-dir artifact
+      - name: Archive scientific source
+        run: |
+          mkdir -p artifact/source
+          cp experiments/*.py artifact/source/
+          pip freeze > artifact/reference-pip-freeze.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: overlap-reference-${{ matrix.start }}
+          path: artifact/
+          retention-days: 90
+          if-no-files-found: error
+  reference_seal:
+    needs: reference
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: |
+          pip install torch==2.10.0 --index-url https://download.pytorch.org/whl/cpu
+          pip install numpy==2.3.5 pandas==2.2.3 scipy==1.17.0 scikit-learn==1.8.0
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: overlap-reference-*
+          path: downloaded
+      - name: Enforce pooled and per-replicate support before any arms
+        run: python experiments/overlap_translation_novelty.py seal --stage reference --input-dir downloaded --output-dir seal
+      - uses: actions/upload-artifact@v4
+        with:
+          name: overlap-reference-global-seal
+          path: seal/
+  train:
+    needs: reference_seal
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        start: [2200, 2205, 2210, 2215, 2220, 2225]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - run: |
+          pip install torch==2.10.0 --index-url https://download.pytorch.org/whl/cpu
+          pip install numpy==2.3.5 pandas==2.2.3 scipy==1.17.0 scikit-learn==1.8.0
+      - uses: actions/download-artifact@v4
+        with:
+          name: overlap-reference-${{ matrix.start }}
+          path: artifact
+      - name: Train four arms on sealed schedules
+        run: python experiments/overlap_translation_novelty.py train --start ${{ matrix.start }} --end $(( ${{ matrix.start }} + 5 )) --output-dir artifact
+      - run: pip freeze > artifact/train-pip-freeze.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: overlap-train-${{ matrix.start }}
+          path: artifact/
+          retention-days: 90
+          if-no-files-found: error
+  arm_seal:
+    needs: train
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: |
+          pip install torch==2.10.0 --index-url https://download.pytorch.org/whl/cpu
+          pip install numpy==2.3.5 pandas==2.2.3 scipy==1.17.0 scikit-learn==1.8.0
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: overlap-train-*
+          path: downloaded
+      - name: Global 150-state barrier
+        run: python experiments/overlap_translation_novelty.py seal --stage arms --input-dir downloaded --output-dir seal
+      - uses: actions/upload-artifact@v4
+        with:
+          name: overlap-arm-global-seal
+          path: seal/
+  evaluate:
+    needs: arm_seal
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        start: [2200, 2205, 2210, 2215, 2220, 2225]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - run: |
+          pip install torch==2.10.0 --index-url https://download.pytorch.org/whl/cpu
+          pip install numpy==2.3.5 pandas==2.2.3 scipy==1.17.0 scikit-learn==1.8.0
+      - uses: actions/download-artifact@v4
+        with:
+          name: overlap-train-${{ matrix.start }}
+          path: artifact
+      - name: Construct fresh heldout only after global seal
+        run: python experiments/overlap_translation_novelty.py evaluate --start ${{ matrix.start }} --end $(( ${{ matrix.start }} + 5 )) --output-dir artifact
+      - run: pip freeze > artifact/evaluation-pip-freeze.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: overlap-eval-${{ matrix.start }}
+          path: artifact/
+          retention-days: 90
+          if-no-files-found: error
+  aggregate:
+    needs: evaluate
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: |
+          pip install torch==2.10.0 --index-url https://download.pytorch.org/whl/cpu
+          pip install numpy==2.3.5 pandas==2.2.3 scipy==1.17.0 scikit-learn==1.8.0
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: overlap-eval-*
+          path: downloaded
+      - name: Validate and apply frozen conjunction
+        run: python experiments/overlap_translation_novelty.py summarize --input-dir downloaded --output-dir aggregate
+      - uses: actions/upload-artifact@v4
+        with:
+          name: overlap-complete-evidence
+          path: |
+            aggregate/
+            downloaded/
+          retention-days: 90
+          if-no-files-found: error
