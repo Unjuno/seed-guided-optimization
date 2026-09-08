@@ -1,0 +1,169 @@
+name: Spatial allocation alternative to gradient novelty
+on:
+  pull_request:
+    types: [opened, reopened]
+    paths:
+      - 'experiments/spatial_allocation_control.py'
+      - '.github/workflows/spatial_allocation_control.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+env:
+  OMP_NUM_THREADS: '1'
+  MKL_NUM_THREADS: '1'
+  OPENBLAS_NUM_THREADS: '1'
+  NUMEXPR_NUM_THREADS: '1'
+jobs:
+  reference:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        start: [1900, 1905, 1910, 1915, 1920, 1925]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Pinned CPU dependencies
+        run: |
+          pip install torch==2.10.0 --index-url https://download.pytorch.org/whl/cpu
+          pip install numpy==2.3.5 pandas==2.2.3 scipy==1.17.0 scikit-learn==1.8.0
+      - run: python experiments/spatial_allocation_control.py selftest
+      - name: Build reference schedules without intervention arms or heldout
+        run: python experiments/spatial_allocation_control.py reference --start ${{ matrix.start }} --end $(( ${{ matrix.start }} + 5 )) --output-dir artifact
+      - name: Archive source and runtime
+        run: |
+          mkdir -p artifact/source
+          cp experiments/*.py artifact/source/
+          pip freeze > artifact/reference-pip-freeze.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: spatial-reference-${{ matrix.start }}
+          path: artifact/
+          retention-days: 90
+          if-no-files-found: error
+  reference_seal:
+    needs: reference
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: |
+          pip install torch==2.10.0 --index-url https://download.pytorch.org/whl/cpu
+          pip install numpy==2.3.5 pandas==2.2.3 scipy==1.17.0 scikit-learn==1.8.0
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: spatial-reference-*
+          path: downloaded
+      - run: python experiments/spatial_allocation_control.py seal --stage reference --input-dir downloaded --output-dir seal
+      - uses: actions/upload-artifact@v4
+        with:
+          name: spatial-reference-seal
+          path: seal/
+          retention-days: 90
+  train:
+    needs: reference_seal
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        start: [1900, 1905, 1910, 1915, 1920, 1925]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: |
+          pip install torch==2.10.0 --index-url https://download.pytorch.org/whl/cpu
+          pip install numpy==2.3.5 pandas==2.2.3 scipy==1.17.0 scikit-learn==1.8.0
+      - uses: actions/download-artifact@v4
+        with:
+          name: spatial-reference-${{ matrix.start }}
+          path: artifact
+      - run: python experiments/spatial_allocation_control.py train --start ${{ matrix.start }} --end $(( ${{ matrix.start }} + 5 )) --output-dir artifact
+      - run: pip freeze > artifact/train-pip-freeze.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: spatial-train-${{ matrix.start }}
+          path: artifact/
+          retention-days: 90
+          if-no-files-found: error
+  arm_seal:
+    needs: train
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: |
+          pip install torch==2.10.0 --index-url https://download.pytorch.org/whl/cpu
+          pip install numpy==2.3.5 pandas==2.2.3 scipy==1.17.0 scikit-learn==1.8.0
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: spatial-train-*
+          path: downloaded
+      - run: python experiments/spatial_allocation_control.py seal --stage arms --input-dir downloaded --output-dir seal
+      - uses: actions/upload-artifact@v4
+        with:
+          name: spatial-arm-seal
+          path: seal/
+          retention-days: 90
+  evaluate:
+    needs: arm_seal
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        start: [1900, 1905, 1910, 1915, 1920, 1925]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: |
+          pip install torch==2.10.0 --index-url https://download.pytorch.org/whl/cpu
+          pip install numpy==2.3.5 pandas==2.2.3 scipy==1.17.0 scikit-learn==1.8.0
+      - uses: actions/download-artifact@v4
+        with:
+          name: spatial-train-${{ matrix.start }}
+          path: artifact
+      - run: python experiments/spatial_allocation_control.py evaluate --start ${{ matrix.start }} --end $(( ${{ matrix.start }} + 5 )) --output-dir artifact
+      - run: pip freeze > artifact/eval-pip-freeze.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: spatial-eval-${{ matrix.start }}
+          path: artifact/
+          retention-days: 90
+          if-no-files-found: error
+  aggregate:
+    needs: evaluate
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: |
+          pip install torch==2.10.0 --index-url https://download.pytorch.org/whl/cpu
+          pip install numpy==2.3.5 pandas==2.2.3 scipy==1.17.0 scikit-learn==1.8.0
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: spatial-eval-*
+          path: downloaded
+      - run: python experiments/spatial_allocation_control.py summarize --input-dir downloaded --output-dir aggregate
+      - uses: actions/upload-artifact@v4
+        with:
+          name: spatial-aggregate30
+          path: aggregate/
+          retention-days: 90
+          if-no-files-found: error
