@@ -1,0 +1,9 @@
+{
+  "max_general_identity_error": 4.440892098500626e-16,
+  "synthetic_trials": 1000,
+  "rank1_novelty": 1.3333333333333333,
+  "rank2_novelty": 1.3333333333333333,
+  "rank1": 1,
+  "rank2": 2,
+  "scope": "algebraic limitation of pairwise novelty; no trained-model conclusion"
+}

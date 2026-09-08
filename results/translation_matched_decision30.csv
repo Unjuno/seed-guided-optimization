@@ -1,0 +1,2 @@
+decision,n,all_gates_pass,matched_performance_pass,unmatched_performance_pass,pooled_support,minimum_replicate_support,fallback_steps,translation_caliper,protocol_hash,states_checked,environment_rows,max_environment_error
+OVERLAP-RESTRICTED TRANSLATION-BALANCED NOVELTY SUPPORT,30,True,True,True,0.9537500000000001,0.9125,111,0.2,e0dfe80f3bae4db248939fd212bad5ada5b96699b379710bc5453c5d7f820688,150,12000,0.0
