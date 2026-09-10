@@ -33,7 +33,7 @@
 | 対象 | 反復ごとの主要contrast | 採用数別集計 |
 |---|---|---|
 | SmallCNN | [cnn_budget_attenuation30.csv](cnn_budget_attenuation30.csv) | [cnn_budget_q_summary30.csv](cnn_budget_q_summary30.csv) |
-| CIFAR / ResNet-20 | [cifar_budget_attenuation30.csv](cifar_budget_attenuation30.csv) | [cifar_budget_q_summary30.csv](cifar_budget_q_summary30.csv) |
+| CIFAR / ResNet-20 | [cifar_budget_paired30.csv](cifar_budget_paired30.csv) | [cifar_budget_q_summary30.csv](cifar_budget_q_summary30.csv) |
 
 Fashion・MLPを含む比較は [研究状況](../docs/RESEARCH_STATUS.md) と [Fashionの結果](../docs/FASHION_BUDGET_SCALING_RESULT.md) を参照してください。全候補使用時の自動的一致を除く事後解析は、元の事前登録した主要検定とは区別します。
 
