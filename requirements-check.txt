@@ -1,0 +1,5 @@
+# Read-only CSV verification only; no PyTorch or image datasets.
+# Use Python 3.12 to follow the documented verification setup.
+numpy==2.3.5
+pandas==2.2.3
+scipy==1.17.0

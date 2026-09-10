@@ -1,0 +1,46 @@
+name: Public documentation and CSV checks
+
+on:
+  pull_request:
+    paths:
+      - 'README.md'
+      - 'README.en.md'
+      - 'docs/README.md'
+      - 'docs/QUICKSTART.md'
+      - 'docs/SHARE_ON_X.md'
+      - 'experiments/README.md'
+      - 'results/README.md'
+      - 'results/translation_matched_primary30.csv'
+      - 'results/translation_matched_summary30.csv'
+      - 'requirements-check.txt'
+      - 'scripts/check_public_results.py'
+      - 'scripts/test_public_results.py'
+      - 'scripts/check_public_docs.py'
+      - '.github/workflows/publication_check.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  public-checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install read-only verification dependencies
+        run: python -m pip install -r requirements-check.txt
+      - name: Reject malformed public result inputs
+        run: python -m unittest discover -s scripts -p 'test_public_results.py'
+      - name: Recompute public performance summaries without training
+        run: python scripts/check_public_results.py
+      - name: Verify existing public paired and algebra checks
+        run: |
+          python experiments/check_parameter_matched_evidence.py
+          python experiments/check_spatial_allocation_evidence.py
+          python experiments/check_novelty_coherence_identity.py
+      - name: Verify publication-page local links
+        run: python scripts/check_public_docs.py
