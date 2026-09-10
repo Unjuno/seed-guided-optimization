@@ -5,6 +5,26 @@ on:
     paths:
       - 'README.md'
       - 'README.en.md'
+      - 'CITATION.cff'
+      - 'docs/README.md'
+      - 'docs/QUICKSTART.md'
+      - 'docs/SHARE_ON_X.md'
+      - 'experiments/README.md'
+      - 'results/README.md'
+      - 'results/translation_matched_primary30.csv'
+      - 'results/translation_matched_summary30.csv'
+      - 'requirements-check.txt'
+      - 'scripts/check_public_results.py'
+      - 'scripts/test_public_results.py'
+      - 'scripts/check_public_docs.py'
+      - '.github/workflows/publication_check.yml'
+  push:
+    branches:
+      - main
+    paths:
+      - 'README.md'
+      - 'README.en.md'
+      - 'CITATION.cff'
       - 'docs/README.md'
       - 'docs/QUICKSTART.md'
       - 'docs/SHARE_ON_X.md'

@@ -7,17 +7,22 @@ authors:
 repository-code: "https://github.com/Unjuno/seed-guided-optimization"
 url: "https://github.com/Unjuno/seed-guided-optimization"
 license: Apache-2.0
-version: 0.3.0
-date-released: 2026-08-28
+version: 0.4.0
+date-released: 2026-09-11
 keywords:
   - stochastic optimization
   - neural networks
   - gradient selection
-  - random seeds
-  - robust learning
-  - representation geometry
+  - training environment selection
+  - data augmentation
+  - reproducible research
+  - experimental design
 abstract: >-
-  Experimental research code and paired benchmark results for gradient-aware
-  selection of stochastic training environments, including structured
-  MLP/CNN studies, a 40-pair CIFAR-10/ResNet-20 validation, RNG candidate
-  compression, and prospective representation-geometry diagnostics.
+  Experimental research code and paired results for loss- and gradient-aware
+  selection among stochastic training environments under limited candidate
+  budgets. The repository includes online CIFAR-10/ResNet-20 comparisons,
+  preregistered matched schedule interventions on Digits/SmallCNN, negative
+  and failed tests, public result CSVs, and independent verification code.
+  Reported effects are conditional on the tested tasks and protocols; the
+  repository does not establish a universal optimizer, a unique causal
+  gradient-novelty mechanism, worst-case robustness, or a GPU speedup claim.
