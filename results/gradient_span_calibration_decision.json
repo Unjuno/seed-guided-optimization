@@ -1,0 +1,10 @@
+{
+  "decision": "SPAN MATCH CALIBRATION FAIL",
+  "selected_g_caliper": null,
+  "protocol_hash": "b62a9cd5cc543d79269cf0e8d01ee7852882d4c07590fe4ed689d961aff5cf53",
+  "heldout_constructed": false,
+  "intervention_arms_trained": 0,
+  "authoritative_run": 34581895307,
+  "artifact_id": 10192016112,
+  "artifact_sha256": "00e9533cbb88e44881fb3fb0e0a5c569d2d3f0a796bc33949a3c281b17b0411f"
+}
