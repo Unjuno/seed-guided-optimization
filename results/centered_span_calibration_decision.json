@@ -1,0 +1,11 @@
+{
+  "decision": "CENTERED SPAN CALIBRATION FAIL",
+  "selected_g_caliper": null,
+  "protocol_hash": "35a5a9e82c08095c766348f37d360c5ceb28fc7bc80d005967112c4042cbbe77",
+  "maximum_identity_error": 6.20159108510876e-07,
+  "heldout_constructed": false,
+  "intervention_arms_trained": 0,
+  "authoritative_run": 34582755422,
+  "artifact_id": 10192374381,
+  "artifact_sha256": "ccf757eaff339de6cb433bc9cc162d615f44cdc771d7b0814401469a8c9b4435"
+}
