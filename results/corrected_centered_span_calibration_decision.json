@@ -1,0 +1,12 @@
+{
+  "decision": "CORRECTED CENTERED SPAN CALIBRATION PASS",
+  "selected_g_caliper": 0.05,
+  "protocol_hash": "61717ae7a410a2ca64601821affea83427937c23d165f83c0f4b92ab185b1d6d",
+  "maximum_general_identity_error": 4.440892098500626e-15,
+  "maximum_mean_squared_norm_deviation": 1.9582034149756566e-07,
+  "heldout_constructed": false,
+  "intervention_arms_trained": 0,
+  "authoritative_run": 34583466925,
+  "artifact_id": 10192667413,
+  "artifact_sha256": "4f38ba998f26c356454b44c46a90a99cb45faf3e80fa332be87b365c36c85fe0"
+}
