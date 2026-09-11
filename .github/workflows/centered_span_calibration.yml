@@ -1,0 +1,81 @@
+name: Centered residual-span matched-novelty calibration
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    branches: [main]
+    paths:
+      - 'experiments/centered_span_calibration.py'
+      - '.github/workflows/centered_span_calibration.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  OMP_NUM_THREADS: '1'
+  MKL_NUM_THREADS: '1'
+  OPENBLAS_NUM_THREADS: '1'
+  NUMEXPR_NUM_THREADS: '1'
+
+jobs:
+  pilot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        start: [2500, 2502, 2504, 2506, 2508]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Pinned CPU dependencies
+        run: |
+          pip install torch==2.10.0 --index-url https://download.pytorch.org/whl/cpu
+          pip install numpy==2.3.5 pandas==2.2.3 scipy==1.17.0 scikit-learn==1.8.0
+      - name: Centered-geometry synthetic tests
+        run: python experiments/centered_span_calibration.py selftest
+      - name: Training-reference-only Stage A
+        run: python experiments/centered_span_calibration.py run --start ${{ matrix.start }} --end $(( ${{ matrix.start }} + 2 )) --output-dir artifact
+      - name: Archive source and backend
+        run: |
+          mkdir -p artifact/source
+          cp experiments/*.py artifact/source/
+          pip freeze > artifact/pip-freeze.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: centered-span-pilot-${{ matrix.start }}
+          path: artifact/
+          retention-days: 90
+          if-no-files-found: error
+
+  aggregate:
+    needs: pilot
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Pinned validator runtime
+        run: |
+          pip install torch==2.10.0 --index-url https://download.pytorch.org/whl/cpu
+          pip install numpy==2.3.5 pandas==2.2.3 scipy==1.17.0 scikit-learn==1.8.0
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: centered-span-pilot-*
+          path: downloaded
+      - name: Apply frozen Stage-A gates
+        run: python experiments/centered_span_calibration.py summarize --input-dir downloaded --output-dir aggregate
+      - uses: actions/upload-artifact@v4
+        with:
+          name: centered-span-calibration-evidence
+          path: |
+            aggregate/
+            downloaded/
+          retention-days: 90
+          if-no-files-found: error
