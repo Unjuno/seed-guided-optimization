@@ -1,0 +1,5 @@
+physical_caliper,supported_steps,total_steps,pooled_support,minimum_replicate_support,mean_gradient_gap_supported,minimum_replicate_mean_gradient_gap_supported,mean_abs_hardness_diff_supported,mean_abs_loss_variance_z_diff_supported,mean_abs_parameter_z_diff_supported,mean_max_physical_moment_abs_diff_supported,pass
+0.05,0,800,0.0,0.0,0.0,0.0,,,,,False
+0.1,0,800,0.0,0.0,0.0,0.0,,,,,False
+0.2,10,800,0.0125,0.0,0.047329,0.0,0.023378,0.025143,0.025361,0.195136,False
+0.3,64,800,0.08,0.025,0.040843,0.001352,0.018904,0.027217,0.023800,0.264344,False
