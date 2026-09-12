@@ -1,0 +1,2 @@
+supported_steps,total_steps,pooled_support,minimum_replicate_support,mean_rank_gap_supported,minimum_replicate_mean_rank_gap_supported,mean_hardness_diff_supported,mean_abs_loss_variance_z_diff_supported,mean_abs_parameter_z_diff_supported,mean_abs_translation_diff_supported,mean_abs_gradient_novelty_diff_supported,mean_abs_span_diff_supported,mean_abs_opposition_diff_supported,maximum_general_identity_error,identity_pass,pass
+765,800,0.95625,0.925,1.589869,1.477273,-0.293598,0.024524,0.024570,0.098254,0.019522,0.047437,0.029118,3.9968028886505635e-15,True,True
