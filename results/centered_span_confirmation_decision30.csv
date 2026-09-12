@@ -1,0 +1,2 @@
+decision,n,selected_g_caliper,all_balance_manipulation_gates_pass,span_manipulation_pass,performance_pass,pooled_support,minimum_replicate_support,fallback_steps,states_checked,environment_rows,max_environment_reaggregation_error,maximum_general_identity_error,protocol_hash
+NO CENTERED GRADIENT-SPAN PERFORMANCE SUPPORT,30,0.05,True,True,False,0.9616666666666667,0.9125,92,90,7200,0.0,4.884981308350689e-15,4d1c0bdd90f709a9e29ae6ad99fcf52914892e8b5cf3451c2039338658c0bd8f
