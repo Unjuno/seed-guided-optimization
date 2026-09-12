@@ -1,0 +1,9 @@
+{
+  "decision": "HARDNESS-MATCHED RANK CALIBRATION FAIL",
+  "selected_caliper": null,
+  "mode": "rank",
+  "protocol_hash": "2886b131856de2524f2ecd9437eaf4247066a372a129f81ee934dc317cf121a4",
+  "maximum_general_identity_error": 3.9968028886505635e-15,
+  "heldout_constructed": false,
+  "intervention_arms_trained": 0
+}
