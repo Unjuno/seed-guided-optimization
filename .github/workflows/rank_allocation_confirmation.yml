@@ -1,0 +1,208 @@
+name: Loss-rank allocation confirmation
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    branches: [main]
+    paths:
+      - 'experiments/rank_allocation_confirmation.py'
+      - '.github/workflows/rank_allocation_confirmation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  OMP_NUM_THREADS: '1'
+  MKL_NUM_THREADS: '1'
+  OPENBLAS_NUM_THREADS: '1'
+  NUMEXPR_NUM_THREADS: '1'
+
+jobs:
+  reference:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        start: [3200, 3203, 3206, 3209, 3212, 3215, 3218, 3221, 3224, 3227]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Pinned CPU dependencies
+        run: |
+          pip install torch==2.10.0 --index-url https://download.pytorch.org/whl/cpu
+          pip install numpy==2.3.5 pandas==2.2.3 scipy==1.17.0 scikit-learn==1.8.0
+      - name: Synthetic protocol tests
+        run: python experiments/rank_allocation_confirmation.py selftest
+      - name: Build reference schedules only
+        run: python experiments/rank_allocation_confirmation.py reference --start ${{ matrix.start }} --end $(( ${{ matrix.start }} + 3 )) --output-dir artifact
+      - name: Archive source and backend
+        run: |
+          mkdir -p artifact/source
+          cp experiments/*.py artifact/source/
+          pip freeze > artifact/pip-freeze.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rank-allocation-reference-${{ matrix.start }}
+          path: artifact/
+          retention-days: 90
+          if-no-files-found: error
+
+  reference-seal:
+    needs: reference
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Pinned validator runtime
+        run: |
+          pip install torch==2.10.0 --index-url https://download.pytorch.org/whl/cpu
+          pip install numpy==2.3.5 pandas==2.2.3 scipy==1.17.0 scikit-learn==1.8.0
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: rank-allocation-reference-*
+          path: downloaded
+      - name: Seal all 30 reference schedules before arms
+        run: python experiments/rank_allocation_confirmation.py reference-seal --input-dir downloaded --output-dir seal
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rank-allocation-reference-global-seal
+          path: seal/
+          retention-days: 90
+          if-no-files-found: error
+
+  train:
+    needs: reference-seal
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        start: [3200, 3203, 3206, 3209, 3212, 3215, 3218, 3221, 3224, 3227]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Pinned CPU dependencies
+        run: |
+          pip install torch==2.10.0 --index-url https://download.pytorch.org/whl/cpu
+          pip install numpy==2.3.5 pandas==2.2.3 scipy==1.17.0 scikit-learn==1.8.0
+      - uses: actions/download-artifact@v4
+        with:
+          name: rank-allocation-reference-${{ matrix.start }}
+          path: artifact
+      - uses: actions/download-artifact@v4
+        with:
+          name: rank-allocation-reference-global-seal
+          path: global
+      - name: Train only after global reference seal
+        run: python experiments/rank_allocation_confirmation.py train --start ${{ matrix.start }} --end $(( ${{ matrix.start }} + 3 )) --output-dir artifact --global-seal global/reference_seal.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rank-allocation-arms-${{ matrix.start }}
+          path: artifact/
+          retention-days: 90
+          if-no-files-found: error
+
+  arms-seal:
+    needs: train
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Pinned validator runtime
+        run: |
+          pip install torch==2.10.0 --index-url https://download.pytorch.org/whl/cpu
+          pip install numpy==2.3.5 pandas==2.2.3 scipy==1.17.0 scikit-learn==1.8.0
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: rank-allocation-arms-*
+          path: downloaded
+      - name: Seal all 60 intervention states and 30 references
+        run: python experiments/rank_allocation_confirmation.py arms-seal --input-dir downloaded --output-dir seal
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rank-allocation-arms-global-seal
+          path: seal/
+          retention-days: 90
+          if-no-files-found: error
+
+  evaluate:
+    needs: arms-seal
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        start: [3200, 3203, 3206, 3209, 3212, 3215, 3218, 3221, 3224, 3227]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Pinned CPU dependencies
+        run: |
+          pip install torch==2.10.0 --index-url https://download.pytorch.org/whl/cpu
+          pip install numpy==2.3.5 pandas==2.2.3 scipy==1.17.0 scikit-learn==1.8.0
+      - uses: actions/download-artifact@v4
+        with:
+          name: rank-allocation-arms-${{ matrix.start }}
+          path: artifact
+      - uses: actions/download-artifact@v4
+        with:
+          name: rank-allocation-arms-global-seal
+          path: global
+      - name: Construct fresh heldout only after global arm seal
+        run: python experiments/rank_allocation_confirmation.py evaluate --start ${{ matrix.start }} --end $(( ${{ matrix.start }} + 3 )) --output-dir artifact --global-seal global/arms_seal.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rank-allocation-eval-${{ matrix.start }}
+          path: artifact/
+          retention-days: 90
+          if-no-files-found: error
+
+  aggregate:
+    needs: evaluate
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Pinned validator runtime
+        run: |
+          pip install torch==2.10.0 --index-url https://download.pytorch.org/whl/cpu
+          pip install numpy==2.3.5 pandas==2.2.3 scipy==1.17.0 scikit-learn==1.8.0
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: rank-allocation-eval-*
+          path: downloaded
+      - uses: actions/download-artifact@v4
+        with:
+          name: rank-allocation-arms-global-seal
+          path: global
+      - name: Apply frozen Stage-B balance and performance decision
+        run: python experiments/rank_allocation_confirmation.py summarize --input-dir downloaded --output-dir aggregate --global-seal global/arms_seal.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rank-allocation-confirmation-evidence
+          path: |
+            aggregate/
+            downloaded/
+            global/
+          retention-days: 90
+          if-no-files-found: error
