@@ -1,0 +1,8 @@
+{
+  "decision": "OPPOSITION CALIBRATION FAIL",
+  "selected_span_caliper": null,
+  "protocol_hash": "02af6159e515f635a4beb1b4700772656b34b7d606306d9d3dc1857872a2ba55",
+  "maximum_general_identity_error": 3.552713678800501e-15,
+  "heldout_constructed": false,
+  "intervention_arms_trained": 0
+}
