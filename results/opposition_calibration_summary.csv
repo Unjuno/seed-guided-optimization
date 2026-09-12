@@ -1,0 +1,5 @@
+span_caliper,supported_steps,total_steps,pooled_support,minimum_replicate_support,mean_opposition_gap_supported,minimum_replicate_mean_opposition_gap_supported,mean_abs_span_diff_supported,mean_abs_gradient_novelty_diff_supported,mean_abs_hardness_diff_supported,mean_abs_loss_variance_z_diff_supported,mean_abs_parameter_z_diff_supported,mean_abs_translation_diff_supported,maximum_general_identity_error,identity_pass,pass
+0.02,303,800,0.37875,0.3125,0.036549,0.019148,0.009647,0.018667,0.018822,0.021044,0.023918,0.092103,3.552713678800501e-15,True,False
+0.05,481,800,0.60125,0.5,0.046114,0.034532,0.022564,0.019763,0.018836,0.022040,0.024891,0.097784,3.552713678800501e-15,True,False
+0.1,601,800,0.75125,0.65,0.056692,0.043445,0.041887,0.020244,0.018943,0.021769,0.024333,0.097465,3.552713678800501e-15,True,False
+0.2,698,800,0.8725,0.8375,0.073560,0.065115,0.086616,0.021406,0.019792,0.022206,0.024419,0.098381,3.552713678800501e-15,True,False
