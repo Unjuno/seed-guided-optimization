@@ -4,7 +4,6 @@ import argparse, hashlib, json
 from pathlib import Path
 import numpy as np, pandas as pd, torch
 import corrected_centered_span_calibration as cc
-import opposition_calibration as oc
 import parameter_matched_novelty_confirmatory as pm
 import translation_matched_calibration as tc
 import cnn_regime_interaction as cr
@@ -15,12 +14,15 @@ REPS=tuple(range(3100,3110)); SEEDS=tuple(range(81000,81064)); OFFSET=3510000000
 L=.05; P=.05; T=.20; G=.05; S=.10; O=.15; SLACK=1e-12; MIN_POOL=.90; MIN_REP=.80; MIN_R=1.50; MIN_REP_R=.75; MAX_ID=1e-10; K=16;Q=4
 PROTOCOL={"issue":104,"stage":"A","reps":REPS,"train_seeds":SEEDS,"offset":OFFSET,"stride":4099,"K":K,"Q":Q,"steps":80,"epochs":10,"batch":128,"lr":.005,"wd":.001,"subset_family":"loss-rank1 plus any3 ranks2-16","subset_count":455,"loss_variance_z_caliper":L,"p_caliper":P,"t_caliper":T,"g_caliper":G,"span_caliper":S,"opposition_caliper":O,"min_pooled_support":MIN_POOL,"min_rep_support":MIN_REP,"min_mean_rank_gap":MIN_R,"min_rep_mean_rank_gap":MIN_REP_R,"max_general_identity_error":MAX_ID,"threads":1}
 PH=hashlib.sha256(json.dumps(PROTOCOL,sort_keys=True).encode()).hexdigest()
-SOURCES=("common.py","centered_span_calibration.py","corrected_centered_span_calibration.py","opposition_calibration.py","parameter_matched_novelty_calibration.py","parameter_matched_novelty_confirmatory.py","translation_matched_calibration.py","cnn_regime_interaction.py","fixed_dose_response.py","transfer_specificity.py","rank_allocation_calibration.py")
+SOURCES=("common.py","centered_span_calibration.py","corrected_centered_span_calibration.py","parameter_matched_novelty_calibration.py","parameter_matched_novelty_confirmatory.py","translation_matched_calibration.py","cnn_regime_interaction.py","fixed_dose_response.py","transfer_specificity.py","rank_allocation_calibration.py")
 def source_hashes():
     root=Path(__file__).parent; return {n:fd.sha256(root/n) for n in SOURCES}
 def enrich(rows,gd):
-    oc.add_opposition(rows,gd)
-    for r in rows: r['mean_rank']=float(np.mean(np.asarray(r['ranks'],dtype=np.float64)))
+    for r in rows:
+        idx=torch.tensor(r['local'],dtype=torch.long)
+        a=gd.index_select(0,idx).detach().double().cpu().numpy(); gram=a@a.T
+        ii,jj=np.triu_indices(Q,1); r['opposition_score']=float(np.max(1.0-gram[ii,jj]))
+        r['mean_rank']=float(np.mean(np.asarray(r['ranks'],dtype=np.float64)))
     return rows
 def choose_pair(rows):
     fields=("mean_rank","z_loss_variance","z_param","translation_score","gradient_novelty","centered_erank","opposition_score","z_hard")
