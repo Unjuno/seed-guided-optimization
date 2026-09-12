@@ -1,0 +1,15 @@
+{
+  "decision": "STRONG SHARED-NUISANCE CONFIRMATORY MATCH FAILURE",
+  "n": 30,
+  "severity": 3.0,
+  "novelty_gain_diff": -0.04502286212674032,
+  "candidate_loss_diff": 0.01609987194339433,
+  "novelty_gain_tolerance": 0.03,
+  "candidate_loss_tolerance": 0.1,
+  "match_pass": false,
+  "heldout_constructed": false,
+  "states_saved": 120,
+  "protocol_hash": "ba805bea349a26f6c63074f1d8c36b66748557f795cb415e862702c3e8f14b18",
+  "training_match_seal_artifact_id": 10299028929,
+  "training_match_seal_sha256": "93fc886a21694f25ba4df448760aa92c08ec82c150f110c3511edef2c7c433d8"
+}
