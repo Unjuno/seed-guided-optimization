@@ -1,0 +1,81 @@
+name: Shared high-dimensional nuisance calibration
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    branches: [main]
+    paths:
+      - 'experiments/shared_nuisance_calibration.py'
+      - '.github/workflows/shared_nuisance_calibration.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  OMP_NUM_THREADS: '1'
+  MKL_NUM_THREADS: '1'
+  OPENBLAS_NUM_THREADS: '1'
+  NUMEXPR_NUM_THREADS: '1'
+
+jobs:
+  pilot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        start: [3500,3502,3504,3506,3508]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Pinned CPU dependencies
+        run: |
+          pip install torch==2.10.0 --index-url https://download.pytorch.org/whl/cpu
+          pip install numpy==2.3.5 pandas==2.2.3 scipy==1.17.0 scikit-learn==1.8.0
+      - name: Shared-nuisance synthetic tests
+        run: python experiments/shared_nuisance_calibration.py selftest
+      - name: Training-only calibration
+        run: python experiments/shared_nuisance_calibration.py run --start ${{ matrix.start }} --end $(( ${{ matrix.start }} + 2 )) --output-dir artifact
+      - name: Archive source and backend
+        run: |
+          mkdir -p artifact/source
+          cp experiments/*.py artifact/source/
+          pip freeze > artifact/pip-freeze.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: shared-nuisance-pilot-${{ matrix.start }}
+          path: artifact/
+          retention-days: 90
+          if-no-files-found: error
+
+  aggregate:
+    needs: pilot
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Pinned validator runtime
+        run: |
+          pip install torch==2.10.0 --index-url https://download.pytorch.org/whl/cpu
+          pip install numpy==2.3.5 pandas==2.2.3 scipy==1.17.0 scikit-learn==1.8.0
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: shared-nuisance-pilot-*
+          path: downloaded
+      - name: Apply frozen calibration match rule
+        run: python experiments/shared_nuisance_calibration.py summarize --input-dir downloaded --output-dir aggregate
+      - uses: actions/upload-artifact@v4
+        with:
+          name: shared-nuisance-calibration-evidence
+          path: |
+            aggregate/
+            downloaded/
+          retention-days: 90
+          if-no-files-found: error

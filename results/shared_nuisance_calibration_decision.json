@@ -1,0 +1,9 @@
+{
+  "decision": "SHARED-NUISANCE MATCH CALIBRATION FAIL",
+  "selected_severity": null,
+  "novelty_gain_tolerance": 0.03,
+  "candidate_loss_tolerance": 0.1,
+  "protocol_hash": "bb9658dbb5ad1f332caeaef0575762210a416a56822650bf2d9a317eeffd8dbc",
+  "heldout_constructed": false,
+  "states_saved": 0
+}
