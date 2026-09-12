@@ -1,0 +1,70 @@
+name: Rank-matched hardness calibration
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    branches: [main]
+    paths:
+      - 'experiments/rank_hardness_disentanglement.py'
+      - '.github/workflows/rank_matched_hardness_calibration.yml'
+  workflow_dispatch:
+permissions: {contents: read}
+env:
+  OMP_NUM_THREADS: '1'
+  MKL_NUM_THREADS: '1'
+  OPENBLAS_NUM_THREADS: '1'
+  NUMEXPR_NUM_THREADS: '1'
+jobs:
+  pilot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        start: [3900,3902,3904,3906,3908]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12', cache: pip}
+      - name: Pinned CPU dependencies
+        run: |
+          pip install torch==2.10.0 --index-url https://download.pytorch.org/whl/cpu
+          pip install numpy==2.3.5 pandas==2.2.3 scipy==1.17.0 scikit-learn==1.8.0
+      - name: Training-reference-only Stage A
+        run: python experiments/rank_hardness_disentanglement.py run --experiment hardness --start ${{ matrix.start }} --end $(( ${{ matrix.start }} + 2 )) --output-dir artifact
+      - name: Archive source and backend
+        run: |
+          mkdir -p artifact/source
+          cp experiments/*.py artifact/source/
+          pip freeze > artifact/pip-freeze.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rank-matched-hardness-pilot-${{ matrix.start }}
+          path: artifact/
+          retention-days: 90
+          if-no-files-found: error
+  aggregate:
+    needs: pilot
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - name: Pinned validator runtime
+        run: |
+          pip install torch==2.10.0 --index-url https://download.pytorch.org/whl/cpu
+          pip install numpy==2.3.5 pandas==2.2.3 scipy==1.17.0 scikit-learn==1.8.0
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: rank-matched-hardness-pilot-*
+          path: downloaded
+      - name: Apply frozen Stage-A gates
+        run: python experiments/rank_hardness_disentanglement.py summarize --experiment hardness --input-dir downloaded --output-dir aggregate
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rank-matched-hardness-calibration-evidence
+          path: |
+            aggregate/
+            downloaded/
+          retention-days: 90
+          if-no-files-found: error
