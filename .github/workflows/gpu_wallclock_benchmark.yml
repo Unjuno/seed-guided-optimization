@@ -26,7 +26,7 @@ permissions:
 jobs:
   benchmark:
     # Requires a repository/organization self-hosted runner carrying all four labels.
-    # No CPU fallback is allowed: the benchmark script also fails closed if CUDA is absent.
+    # The runner must provide a CUDA-compatible PyTorch build; no CPU fallback is allowed.
     runs-on: [self-hosted, linux, x64, gpu]
     timeout-minutes: 180
     steps:
@@ -34,12 +34,14 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: Verify NVIDIA runtime
+      - name: Pinned non-Torch dependencies
+        run: pip install numpy==2.3.5 pandas==2.2.3 scipy==1.17.0 scikit-learn==1.8.0
+      - name: Verify runner-provided NVIDIA and PyTorch runtime
         run: |
           nvidia-smi
           python - <<'PY'
           import torch
-          assert torch.cuda.is_available(), 'CUDA unavailable'
+          assert torch.cuda.is_available(), 'CUDA unavailable or runner PyTorch is not CUDA-enabled'
           print(torch.__version__, torch.version.cuda, torch.cuda.get_device_name(0))
           PY
       - name: Run synchronized GPU benchmark
