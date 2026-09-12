@@ -1,0 +1,9 @@
+{
+  "decision": "STRONG SHARED-NUISANCE MATCH CALIBRATION PASS",
+  "selected_severity": 3.0,
+  "novelty_gain_tolerance": 0.03,
+  "candidate_loss_tolerance": 0.1,
+  "protocol_hash": "677f487d33577518e062ca5262039a141ea21495153cb8740cf1c8e0add0dc2e",
+  "heldout_constructed": false,
+  "states_saved": 0
+}
