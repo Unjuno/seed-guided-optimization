@@ -1,0 +1,2 @@
+decision,n,all_balance_manipulation_gates_pass,rank_manipulation_pass,performance_pass,pooled_support,minimum_replicate_support,fallback_steps,states_checked,environment_rows,max_environment_reaggregation_error,maximum_general_identity_error,protocol_hash
+MATCHED RANK-RELAXATION SUPPORT,30,True,True,True,0.98,0.9375,48,90,7200,0.0,4.440892098500626e-15,9729e436e9d69f9082b239980c2b5a6deff8257bbb332724d769b5d32588c3c9
