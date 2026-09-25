@@ -15,6 +15,7 @@
   "minimum_negative_direction_p": 0.4352131574768505,
   "clean_accuracy_difference_fraction_exploratory": 0.03170580665270487,
   "environment_sd_difference_fraction_exploratory": 0.007195887412962623,
-  "independent_full_audit": "pending",
-  "note": "Extracted from completed authoritative archive. No new training performed for this note. Non-significance is not equality or evidence of safety. Secondary endpoints do not upgrade the frozen primary outcome."
+  "independent_full_audit": "PASS: archived choices, hashes, state tensors and statistics; not raw-gradient reconstruction or image inference",
+  "independent_audit_report": "results/rank_tail_independent_audit.json",
+  "note": "No new training performed for this audit. Non-significance is not equality or evidence of safety. Secondary endpoints do not upgrade the frozen primary outcome."
 }
