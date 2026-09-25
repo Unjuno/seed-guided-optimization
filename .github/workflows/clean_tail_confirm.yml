@@ -11,7 +11,7 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: clean-tail-six-pool-confirm-\${{ github.ref }}
+  group: clean-tail-six-pool-confirm-${{ github.ref }}
   cancel-in-progress: false
 env:
   OMP_NUM_THREADS: '1'
@@ -31,7 +31,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: \${{ github.event.pull_request.head.sha || github.sha }}
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           fetch-depth: 0
       - uses: actions/setup-python@v5
         with:
@@ -56,7 +56,7 @@ jobs:
           python experiments/clean_tail_confirm.py selftest
           python experiments/verify_clean_tail.py selftest
       - name: Train two policies without heldout construction
-        run: python experiments/clean_tail_confirm.py train --start \${{ matrix.start }} --end $(( \${{ matrix.start }} + 3 )) --output-dir artifact
+        run: python experiments/clean_tail_confirm.py train --start ${{ matrix.start }} --end $(( ${{ matrix.start }} + 3 )) --output-dir artifact
       - name: Archive actual source and backend
         if: always()
         run: |
@@ -68,7 +68,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: clean-tail-train-\${{ matrix.start }}
+          name: clean-tail-train-${{ matrix.start }}
           path: artifact/
           retention-days: 90
           if-no-files-found: error
@@ -80,7 +80,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: \${{ github.event.pull_request.head.sha || github.sha }}
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
@@ -113,7 +113,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: \${{ github.event.pull_request.head.sha || github.sha }}
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
@@ -123,18 +123,18 @@ jobs:
           pip install numpy==2.3.5 pandas==2.2.3 scipy==1.17.0 scikit-learn==1.8.0
       - uses: actions/download-artifact@v4
         with:
-          name: clean-tail-train-\${{ matrix.start }}
+          name: clean-tail-train-${{ matrix.start }}
           path: artifact
       - uses: actions/download-artifact@v4
         with:
           name: clean-tail-global-seal
           path: sealed
       - name: Evaluate only after global seal validation
-        run: python experiments/clean_tail_confirm.py evaluate --start \${{ matrix.start }} --end $(( \${{ matrix.start }} + 3 )) --output-dir artifact --global-seal sealed/global_seal.json
+        run: python experiments/clean_tail_confirm.py evaluate --start ${{ matrix.start }} --end $(( ${{ matrix.start }} + 3 )) --output-dir artifact --global-seal sealed/global_seal.json
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: clean-tail-eval-\${{ matrix.start }}
+          name: clean-tail-eval-${{ matrix.start }}
           path: artifact/
           retention-days: 90
           if-no-files-found: error
@@ -146,7 +146,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: \${{ github.event.pull_request.head.sha || github.sha }}
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
@@ -178,7 +178,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: \${{ github.event.pull_request.head.sha || github.sha }}
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
