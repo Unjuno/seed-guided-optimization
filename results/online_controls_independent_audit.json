@@ -1,0 +1,23 @@
+{
+  "audit": "PASS",
+  "decision": "ONLINE GRADIENT-INFORMATION CONTROL SUPPORT",
+  "protocol_hash": "b4331a2f90d58cb7499a575bed13262f672eeec102207edb1a6f464785ef85e4",
+  "states_checked": 240,
+  "hash_checks": 440,
+  "environment_rows": 19200,
+  "training_records_checked": 19200,
+  "max_environment_error": 0.0,
+  "max_statistics_error": 0.0,
+  "n": 60,
+  "pools": 3,
+  "primary": [
+    {"comparator":"loss_hard","n":60,"mean":0.02671688298310672,"se":0.0032578607285130914,"k":2.000995378088267,"ci95_low":0.020197918722896748,"ci95_high":0.033235847243316685,"p_one_sided":1.2530011185352308e-11,"positive_pairs":53,"p_holm":3.7590033556056925e-11,"supported":true},
+    {"comparator":"anchor_random","n":60,"mean":0.006770189534404613,"se":0.003659193341332893,"k":2.000995378088267,"ci95_low":-0.0005518394291338692,"ci95_high":0.014092218497943095,"p_one_sided":0.03464801404763417,"positive_pairs":39,"p_holm":0.03464801404763417,"supported":true},
+    {"comparator":"sham_gradnov","n":60,"mean":0.020702770910589207,"se":0.0031784355979257205,"k":2.000995378088267,"ci95_low":0.014342735969588623,"ci95_high":0.02706280585158979,"p_one_sided":8.958792736170791e-09,"positive_pairs":51,"p_holm":1.7917585472341582e-08,"supported":true}
+  ],
+  "training_cpus":["AMD EPYC 7763 64-Core Processor","AMD EPYC 9V45 96-Core Processor","AMD EPYC 9V74 80-Core Processor","INTEL(R) XEON(R) PLATINUM 8573C","Intel(R) Xeon(R) 6973P-C"],
+  "evaluation_cpus":["AMD EPYC 7763 64-Core Processor","AMD EPYC 9V45 96-Core Processor","AMD EPYC 9V74 80-Core Processor","INTEL(R) XEON(R) PLATINUM 8573C","Intel(R) Xeon(R) 6973P-C"],
+  "clock_mhz_snapshot_range":{"train":[2300.0,4081.351],"evaluate":[2445.424,4284.064]},
+  "audit_runtime":{"python":"3.13.5","numpy":"2.3.5","scipy":"1.17.0","pandas":"2.2.3","torch":"2.10.0+cpu"},
+  "limitations":"No raw-image inference/retraining or raw-gradient/selector-optimality reconstruction. Paired initialization is verified as metadata, not rerun. Fixed three pools, not random-pool generalization. Two-sided confidence intervals are marginal, not simultaneous."
+}
