@@ -1,0 +1,172 @@
+name: Six-pool roadmap validation
+on:
+  pull_request:
+    types: [opened, reopened]
+    branches: [main]
+    paths:
+      - 'experiments/roadmap_validation.py'
+      - '.github/workflows/roadmap_validation.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+env:
+  OMP_NUM_THREADS: '1'
+  MKL_NUM_THREADS: '1'
+  OPENBLAS_NUM_THREADS: '1'
+  NUMEXPR_NUM_THREADS: '1'
+jobs:
+  train:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      max-parallel: 6
+      matrix:
+        study: [tail, optimizer, fashion]
+        pool: [0, 1, 2, 3, 4, 5]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Pinned scientific runtime
+        run: |
+          pip install torch==2.10.0 --index-url https://download.pytorch.org/whl/cpu
+          pip install numpy==2.3.5 pandas==2.2.3 scipy==1.17.0 scikit-learn==1.8.0
+      - name: Synthetic tests only
+        run: python experiments/roadmap_validation.py selftest
+      - name: Fixed training without heldout construction
+        run: python experiments/roadmap_validation.py train --study ${{ matrix.study }} --pool ${{ matrix.pool }} --out artifact
+      - name: Archive source and backend
+        if: always()
+        run: |
+          mkdir -p artifact/source
+          cp experiments/common.py experiments/roadmap_validation.py artifact/source/
+          cp docs/CLEAN_TAIL_CONFIRM_PROTOCOL.md artifact/source/
+          git rev-parse HEAD > artifact/source_commit.txt
+          pip freeze > artifact/pip-freeze.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: roadmap-train-${{ matrix.study }}-${{ matrix.pool }}
+          path: |
+            artifact/
+            !artifact/cache/**
+          retention-days: 90
+          if-no-files-found: error
+  seal:
+    needs: train
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        study: [tail, optimizer, fashion]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Pinned validator runtime
+        run: |
+          pip install torch==2.10.0 --index-url https://download.pytorch.org/whl/cpu
+          pip install numpy==2.3.5 pandas==2.2.3 scipy==1.17.0 scikit-learn==1.8.0
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: roadmap-train-${{ matrix.study }}-*
+          path: downloaded
+      - name: Verify all six pools and seal states
+        run: python experiments/roadmap_validation.py seal --study ${{ matrix.study }} --root downloaded --out global
+      - uses: actions/upload-artifact@v4
+        with:
+          name: roadmap-global-${{ matrix.study }}
+          path: global/
+          retention-days: 90
+          if-no-files-found: error
+  evaluate:
+    needs: seal
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      max-parallel: 6
+      matrix:
+        study: [tail, optimizer, fashion]
+        pool: [0, 1, 2, 3, 4, 5]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Pinned evaluation runtime
+        run: |
+          pip install torch==2.10.0 --index-url https://download.pytorch.org/whl/cpu
+          pip install numpy==2.3.5 pandas==2.2.3 scipy==1.17.0 scikit-learn==1.8.0
+      - uses: actions/download-artifact@v4
+        with:
+          name: roadmap-train-${{ matrix.study }}-${{ matrix.pool }}
+          path: artifact
+      - uses: actions/download-artifact@v4
+        with:
+          name: roadmap-global-${{ matrix.study }}
+          path: global
+      - name: Evaluate only after global seal
+        run: python experiments/roadmap_validation.py evaluate --study ${{ matrix.study }} --pool ${{ matrix.pool }} --out artifact --global-seal global/global_seal.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: roadmap-eval-${{ matrix.study }}-${{ matrix.pool }}
+          path: |
+            artifact/
+            !artifact/cache/**
+          retention-days: 90
+          if-no-files-found: error
+  aggregate:
+    needs: evaluate
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        study: [tail, optimizer, fashion]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Pinned statistics runtime
+        run: |
+          pip install torch==2.10.0 --index-url https://download.pytorch.org/whl/cpu
+          pip install numpy==2.3.5 pandas==2.2.3 scipy==1.17.0 scikit-learn==1.8.0
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: roadmap-eval-${{ matrix.study }}-*
+          path: downloaded
+      - uses: actions/download-artifact@v4
+        with:
+          name: roadmap-global-${{ matrix.study }}
+          path: global
+      - name: Frozen six-pool decisions
+        run: python experiments/roadmap_validation.py aggregate --study ${{ matrix.study }} --root downloaded --out aggregate --global-seal global/global_seal.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: roadmap-${{ matrix.study }}-evidence
+          path: |
+            aggregate/
+            downloaded/
+            global/
+          retention-days: 90
+          if-no-files-found: error
