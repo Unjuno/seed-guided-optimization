@@ -1,0 +1,28 @@
+name: Online control public statistics
+on:
+  pull_request:
+    paths:
+      - 'results/online_controls_*.csv'
+      - 'scripts/check_online_controls.py'
+      - '.github/workflows/online_control_checks.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'results/online_controls_*.csv'
+      - 'scripts/check_online_controls.py'
+      - '.github/workflows/online_control_checks.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install numpy==2.3.5 scipy==1.17.0
+      - name: Recompute all60 paired contrasts and Holm3 decisions
+        run: python scripts/check_online_controls.py
