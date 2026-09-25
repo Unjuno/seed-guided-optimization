@@ -1,0 +1,61 @@
+{
+  "audit": "PASS",
+  "experiment_decision": "NO MEAN-TAIL TRADEOFF REPLICATION",
+  "n": 60,
+  "subset_rows_checked": 2184000,
+  "optimal_pairs_checked": 4659,
+  "fallback_steps": 141,
+  "states_checked": 180,
+  "hash_checks": 660,
+  "max_pair_error": 0.0,
+  "max_environment_error": 0.0,
+  "max_paired_error": 0.0,
+  "mean": {
+    "n": 60,
+    "mean": 0.002979759167258935,
+    "se": 0.0027009209012701283,
+    "k": 2.000995378088267,
+    "ci95_low": -0.0024247710727645882,
+    "ci95_high": 0.008384289407282457,
+    "p_one_sided": 0.13720167313361958,
+    "positive_pairs": 34
+  },
+  "minimum": {
+    "n": 60,
+    "mean": -0.0007004534204800923,
+    "se": 0.004275536127771282,
+    "k": 2.000995378088267,
+    "ci95_low": -0.009255781450999834,
+    "ci95_high": 0.00785487461003965,
+    "p_one_sided": 0.5647868425231495,
+    "positive_pairs": 29
+  },
+  "p_one_sided_minimum_negative": 0.4352131574768505,
+  "clean_exploratory": {
+    "n": 60,
+    "mean": 0.03170580665270487,
+    "se": 0.0065118154561495676,
+    "k": 2.000995378088267,
+    "ci95_low": 0.018675694021985847,
+    "ci95_high": 0.044735919283423894,
+    "p_one_sided": 4.3792621049521645e-06,
+    "positive_pairs": 43
+  },
+  "sd_exploratory": {
+    "n": 60,
+    "mean": 0.007195887412962623,
+    "se": 0.001928117759938082,
+    "k": 2.000995378088267,
+    "ci95_low": 0.003337732686916618,
+    "ci95_high": 0.011054042139008628,
+    "p_one_sided": 0.00021456768826989538,
+    "positive_pairs": 40
+  },
+  "cpus": {
+    "reference": ["AMD EPYC 7763 64-Core Processor", "AMD EPYC 9V74 80-Core Processor", "INTEL(R) XEON(R) PLATINUM 8573C", "Intel(R) Xeon(R) 6973P-C", "Intel(R) Xeon(R) Platinum 8370C CPU @ 2.80GHz"],
+    "arm": ["AMD EPYC 7763 64-Core Processor", "AMD EPYC 9V45 96-Core Processor", "AMD EPYC 9V74 80-Core Processor", "INTEL(R) XEON(R) PLATINUM 8573C", "Intel(R) Xeon(R) 6973P-C", "Intel(R) Xeon(R) Platinum 8370C CPU @ 2.80GHz"],
+    "evaluation": ["AMD EPYC 7763 64-Core Processor", "AMD EPYC 9V45 96-Core Processor", "AMD EPYC 9V74 80-Core Processor", "INTEL(R) XEON(R) PLATINUM 8573C", "Intel(R) Xeon(R) 6973P-C", "Intel(R) Xeon(R) Platinum 8370C CPU @ 2.80GHz"]
+  },
+  "audit_runtime": {"python": "3.13.5", "numpy": "2.3.5", "scipy": "1.17.0", "pandas": "2.2.3", "torch": "2.10.0+cpu"},
+  "limits": "No raw-image inference, retraining, raw-gradient reconstruction, or cross-hardware replication."
+}

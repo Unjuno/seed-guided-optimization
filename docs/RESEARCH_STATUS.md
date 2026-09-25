@@ -1,59 +1,65 @@
 # Research status
 
-Updated2026-09-09. Results are conditional on task, comparison, measurement and frozen rule. Neither a PASS nor a matching gate identifies a unique mediator.
+Updated2026-09-25. Results are conditional on task, comparison, measurement and frozen rule. A PASS, a matching gate, or a closed Issue does not identify a unique mediator. [Research roadmap](RESEARCH_ROADMAP.md) separates completed experiments from unresolved mechanisms and resource-dependent measurements.
 
-## Latest completed sequence
+## Latest completed online control experiment
+
+[Issue121 online controls](ONLINE_CONTROL_RESULT.md), first valid run36137245500, used60fresh training blocks across three fixed environment pools. All240states were globally sealed before heldout construction. Each policy selected on its own current model state: original gradnov, loss-hard, hardest-plus-random-three, and gradnov with shuffled gradient/candidate correspondence.
+
+| Gradnov minus comparator | Mean effect (pp) | Two-sided95% CI (pp) | Holm-adjusted one-sided p |
+|---|---:|---|---:|
+| loss-hard | +2.671688 | [+2.019792,+3.323585] | 3.759003e-11 |
+| anchored random | +0.677019 | [-0.055184,+1.409222] | 0.034648 |
+| shuffled-gradient gradnov | +2.070277 | [+1.434274,+2.706281] | 1.791759e-8 |
+
+Frozen outcome: **ONLINE GRADIENT-INFORMATION CONTROL SUPPORT**. All3registered one-sided criteria pass after Holm adjustment. The anchored-random contrast is much weaker; its marginal two-sided interval crosses zero and its pool0 point estimate is negative. Do not claim uniform pool superiority or a strictly positive two-sided interval for that comparator.
+
+Correct gradient/environment correspondence contributes to the observed online policy advantage versus the tested sham policy. This does not isolate the unique underlying geometric cause: policies can differ in selected hardness, rank, physical allocation and update trajectories. These data are Digits-specific and use the same historical image split, not new-image or cross-dataset validation.
+
+Independent audit checked440hashes,240state tensor digests,19,200environment rows and19,200training selection records and separately reproduced the paired statistics/Holm decision with zero discrepancy. It did not retrain or reconstruct raw-gradient selector optimality. [Public CSV checker](../scripts/check_online_controls.py) is lighter still: statistics only.
+
+## Mechanism experiments and negative outcomes retained
 
 | Study | Frozen outcome | Scope |
 |---|---|---|
-| Issue89 strict translation calibration | TRANSLATION MATCH CALIBRATION FAIL | largest fixed caliper admits799/800steps; no intervention arm or heldout evaluation; planned strict confirmation not run |
-| Issue91 fresh overlap-restricted intervention | OVERLAP-RESTRICTED TRANSLATION-BALANCED NOVELTY SUPPORT | matched high-low+2.040585 pp,95%CI[+.861808,+3.219362],p.000685123; H/P-only control+3.070818 pp,CI[+2.040397,+4.101239],p6.13693e-7; both primary conditions and all gates pass |
-| Issue83 StageB | PARAMETER-MATCHED GRADIENT NONREDUNDANCY SUPPORT | high-low+3.969922 pp; reference hardness and scalar total diversity matched, factor composition not matched |
-| Issue86 spatial scoring | SPATIAL ALLOCATION ALTERNATIVE SUPPORTED | gradient high-low+3.852029 pp; translation-only high-low+1.768644 pp; both change gradient geometry |
-| Issue80 loss-stratified schedules | LOSS-STRATIFIED NONREDUNDANCY SUPPORT | high-low+4.66929 pp; physical diversity also increased |
+| Issue100 centered residual span | NO CENTERED GRADIENT-SPAN PERFORMANCE SUPPORT | centered rank manipulation succeeded; mean effect+0.2072pp,95%CI[-0.6916,+1.1060],one-sided p0.320402; not proof of zero effect |
+| Issue103 opposition calibration | OPPOSITION CALIBRATION FAIL | even widest frozen span caliper gave87.25%support and insufficient opposition gap; no performance test |
+| Issue105 all-factor moment matching | ALL-FACTOR MATCH CALIBRATION FAIL | only64/800steps supported at widest frozen physical caliper; no performance test |
+| Issue104 matched rank/hardness relaxation | MATCHED RANK-RELAXATION SUPPORT | initial30-block mean+0.9066pp; actual selected hardness also changes |
+| Issues112/113 rank-versus-hardness separation | respective CALIBRATION FAIL decisions | current natural455-subset family did not provide the required isolated manipulation; not evidence that either factor is irrelevant |
+| Issue115 fresh mean-tail replication | NO MEAN-TAIL TRADEOFF REPLICATION | all matching/manipulation gates pass; neither primary directional performance criterion passes |
 
-See [strict failure](TRANSLATION_MATCH_CALIBRATION_RESULT.md), [fresh matched result](OVERLAP_TRANSLATION_RESULT.md), [parameter matching](PARAMETER_MATCHED_RESULT.md), and [spatial alternative](SPATIAL_ALLOCATION_RESULT.md).
+[Issue115 result and full independent audit](RANK_TAIL_TRADEOFF_RESULT.md):60fresh blocks, mean high-rank minus low-rank+0.297976pp,95%CI[-0.242477,+0.838429],positive-direction p0.137202; minimum-accuracy difference-0.070045pp,CI[-0.925578,+0.785487],negative-direction p0.435213. The initial Issue104 finding is not erased, but its mean benefit did not meet the threshold in this fresh replication. Neither nonsignificance nor an audit PASS establishes equal performance or tail safety.
 
-## What changed
+The Issue115 audit independently reconstructed2,184,000subset rows,4,659optimal pairs and141fallbacks across4,800steps,660source/artifact hashes,180state tensor digests and14,400environment rows. No raw-image inference, raw-gradient reconstruction or retraining was performed in that audit.
 
-Strict all-step matching failed because some reference states lack an eligible pair, not because a heldout effect was tested and rejected. An independent enumeration of67200subset summaries reproduced the failure. At the worst pilot step, the smallest possible translation difference under the original hardness/diversity calipers was.579288, outside the largest frozen.50caliper.
+## Exploratory discoveries: not promoted to confirmation
 
-Issue91 is a DIFFERENT preregistered policy using fresh reps2200-2229 and environments. It fixes translation caliper.20 and uses an identical loss-hard subset in both matched arms where no pair exists. All80updates remain. Pooled matched support2289/2400=95.375%, minimum per-rep91.25%, passed the frozen90%/80%gates before any arm trained. This is not a rescue or relabeling of Issue89.
-
-The matched schedule effect remains positive. However M's translation contrast is+.021821 with90%CI[+.017593,+.026049]: within the±.20equivalence margin, not exactly zero. It retains rotation variance+.202555 and different dx/dy allocation. Both reference gradient separation and eligible support differ from the H/P-only control. Thus translation matching strengthens the procedural evidence, not unique-gradient causal identification.
-
-The U-minus-M performance contrast is+1.030233 pp,95%CI[-.457078,+2.517543],descriptive p.083613. Neither this reduction nor a translation-mediated percentage is established.
-
-## Baselines and measurement
-
-The primary quantities compare high and low OFFLINE reference-defined schedules, not online gradnov versus loss-hard. Issue91 M_high versus reference is a secondary+1.927637 pp,95%CI[+.536827,+3.318447]; M_low versus reference-.112948 pp,CI[-1.443973,+1.218077]. Reference comparisons may cross training CPUs and are not equal-total-compute tests.
-
-A new [algebraic clarification](NOVELTY_COHERENCE_IDENTITY.md) shows that average pairwise novelty at fixed subset size and unit norms is determined by the norm of the mean normalized signature. Equal scores can have different span dimensions. This is not a new mathematical theorem or an empirical performance result. It applies to the intervention's mean-pairwise score, not identically to the original greedy online selector.
+Issue115's clean-image accuracy difference was+3.1706pp and environment-accuracy SD difference+0.7196pp despite the failed primary mean/minimum criteria. In the new online trial, gradnov versus anchored-random gave clean accuracy-7.1487pp, minimum over80heldout environments+3.7536pp, and across-environment SD-2.0288pp. These secondary observations motivate a fresh clean-versus-transformation/tail test. They do not retroactively validate Issue115 or establish an adversarial/worst-case guarantee.
 
 ## Earlier evidence retained
 
-Five preregistered30-repetition budget blocks remain unchanged:
+| Study | Outcome and limits |
+|---|---|
+| Issue89 strict translation calibration | TRANSLATION MATCH CALIBRATION FAIL; no intervention or heldout performance test |
+| Issue91 overlap-restricted schedules | matched high-low+2.040585pp,95%CI[+0.861808,+3.219362],p0.000685123; matching is approximate, not all-factor causal identification |
+| Issue83 parameter-matched schedules | high-low+3.969922pp; scalar total diversity and reference hardness matched, factor composition not matched |
+| Issue86 spatial-only scoring | gradient high-low+3.852029pp and translation-only high-low+1.768644pp; both alter gradient geometry |
+| Issue80 loss-stratified schedules | high-low+4.66929pp; physical diversity also increased |
+| Original CIFAR40-pair online comparison | mean+0.1206pp,Holm(5)p0.01336; tail benefit not established |
 
-| Task/model | Low-minus-high attenuation | One-sided p | Scope |
-|---|---:|---:|---|
-| Digits/MLP first |+2.034 pp|1.06e-7|positive registered contrast|
-| Digits/MLP fresh |+2.086 pp|5.16e-7|within-family replication|
-| Digits/SmallCNN |+1.265 pp|.001548|cross-architecture within Digits|
-| FashionMNIST/Tiny Transformer |+.314 pp|.027264|borderline;95%two-sided CI crosses zero|
-| CIFAR-10/ResNet-20 |+.11679 pp|.003804|larger-task replication|
+Issue91 and the other high/low reference-defined histories are OFFLINE schedule interventions, not ordinary online gradnov-versus-loss-hard benchmarks. Numerical effects across these comparisons are not directly comparable. Issue91 retained rotation and individual translation-allocation differences; neither a translation-mediated percentage nor a unique gradient mediator was established. Original failure records and numerical-audit corrections in Issues96/98/100 remain historical evidence, not rescored successes.
 
-All-candidate model identity is structural control, not standalone causal proof. Excluding that endpoint post-hoc retains positive CIFAR attenuation but not an established SmallCNN contrast. Curves are not universally monotone.
+Five preregistered30-block budget tests remain unchanged: Digits/MLP first attenuation+2.034pp,p1.06e-7; freshMLP+2.086pp,p5.16e-7; SmallCNN+1.265pp,p0.001548; FashionMNIST/TinyTransformer+0.314pp,p0.027264 (two-sided95%CI crosses zero); CIFAR/ResNet20+0.11679pp,p0.003804. Curves are not universally monotone. The all-candidate identity is a structural control, not causal proof.
 
-The original CIFAR40-pair online test supports mean+.1206 pp with Holm(5)p.01336; tails are unconfirmed. Optimizer/architecture comparisons, RNG compression and learned-coordinate studies remain in their original documents. Raw rank is not a functionally intrinsic mediator and standardized-rank coupling failed. Pure diversity, accumulated gradient rank and best immediate loss reduction are insufficient explanations. Structured/nuisance matching did not establish reusable-factor causality. MLP full-minus-clean specificity did not transfer to SmallCNN.
+[Pairwise novelty algebra](NOVELTY_COHERENCE_IDENTITY.md) distinguishes directional coherence from independent span. It applies to the intervention's mean pairwise statistic, not identically to the original greedy selector. Raw representation rank is not an intrinsic function-level mediator; standardized-rank coupling and other registered explanatory tests failed. Pure diversity, accumulated gradient rank and immediate loss reduction do not suffice as established general explanations.
 
-## Verification and limits
+## Implementation and uncertainty
 
-Issue91:150checkpoint-file/tensor digests,30schedules,201600subset rows,4800reference-pair rows and12000environment rows independently verified. Re-enumeration reproduced choices and fallback. Maximum reference-score, coordinate-reconstruction and environment-aggregation errors0.0. Separate paired t/TOST checks match the frozen decision. No raw-image inference or retraining in the independent audit.
+Scientific runs use Python3.12.14,torch2.10.0+cpu,numpy2.3.5,pandas2.2.3,scipy1.17.0,sklearn1.8.0, one deterministic CPU thread; actual CPU/backend/clock snapshots are archived per run. New online controls use batch128/last92,10epochs,80updates,16candidates/4adopted, float32training and float64statistics. Within-block policy training shares a runner. Clocks are uncontrolled; no speed claim is made.
 
-Science used Python3.12.14,torch2.10.0+cpu,numpy2.3.5,pandas2.2.3,scipy1.17.0,sklearn1.8.0,one deterministicCPU thread. Intervention CPUs were AMD EPYC7763/9V74; all four intervention arms share a runner within rep. Clock frequencies are uncontrolled and there is no speed/GPU claim.
+Blocks, not environments or steps, are statistical repetitions. Images and specified pools are reused/fixed. Paired SE and the t interval are conditional, not combined uncertainty across datasets, unseen pool distributions and hardware. Historical cross-hardware drift remains unresolved. A minimum over80sampled environments is not universal worst-case performance. GPU matched-cost measurement, broad task universality, calibrated per-run gating and unique-mechanism identification remain open.
 
-The30training blocks, not environments or steps, are statistical repetitions. Images and environment pools are fixed. Paired SE is not total combined uncertainty across datasets/images/backends. Historical cross-hardware drift remains unresolved. New tail safety, calibrated per-run gating, broad task universality and matched-cost practical value are not established.
+## Next discrimination and publication
 
-## Next discrimination
-
-The positive effect survives approximate balance on three reference summaries over available matched support. It does not show whether the useful property is gradient span, directional opposition, remaining physical-factor allocation or another schedule feature. A next experiment should distinguish these properties rather than rename the same average cosine score or convert correlated treatment differences into a mediated fraction.
+Independently confirm the clean/tail exploratory contrast on fresh environment pools; then test whether the correctly associated gradient policy retains its advantage under a suitable online loss/rank control. Matching failures require a genuinely identifying design, not threshold relaxation. Follow [the roadmap](RESEARCH_ROADMAP.md) and [bounded research scope](AUTONOMOUS_RESEARCH_SCOPE.md). X announcement remains paused at the owner's request.
