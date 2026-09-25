@@ -1,0 +1,154 @@
+name: Online gradient-information controls
+on:
+  pull_request:
+    types: [opened, reopened]
+    branches: [main]
+    paths:
+      - '.github/workflows/online_information_controls.yml'
+      - 'experiments/online_information_controls.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: online-information-controls-${{ github.ref }}
+  cancel-in-progress: false
+env:
+  OMP_NUM_THREADS: '1'
+  MKL_NUM_THREADS: '1'
+  OPENBLAS_NUM_THREADS: '1'
+  NUMEXPR_NUM_THREADS: '1'
+jobs:
+  train:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      max-parallel: 10
+      matrix:
+        start: [5000,5003,5006,5009,5012,5015,5018,5021,5024,5027,5030,5033,5036,5039,5042,5045,5048,5051,5054,5057]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Pinned CPU dependencies
+        run: |
+          pip install torch==2.10.0 --index-url https://download.pytorch.org/whl/cpu
+          pip install numpy==2.3.5 pandas==2.2.3 scipy==1.17.0 scikit-learn==1.8.0
+      - name: Synthetic checks before real outcomes
+        run: python experiments/online_information_controls.py selftest
+      - name: Train four policies per block without heldout construction
+        run: python experiments/online_information_controls.py train --start ${{ matrix.start }} --end $(( ${{ matrix.start }} + 3 )) --output-dir artifact
+      - name: Archive actual source and backend
+        if: always()
+        run: |
+          mkdir -p artifact/source
+          cp experiments/*.py artifact/source/
+          cp docs/ONLINE_CONTROL_PROTOCOL.md artifact/
+          pip freeze > artifact/pip-freeze.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: online-controls-train-${{ matrix.start }}
+          path: artifact/
+          retention-days: 90
+          if-no-files-found: error
+  seal:
+    needs: train
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: |
+          pip install torch==2.10.0 --index-url https://download.pytorch.org/whl/cpu
+          pip install numpy==2.3.5 pandas==2.2.3 scipy==1.17.0 scikit-learn==1.8.0
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: online-controls-train-*
+          path: downloaded
+      - name: Seal all 240 model states before heldout construction
+        run: python experiments/online_information_controls.py seal --input-dir downloaded --output-dir sealed
+      - uses: actions/upload-artifact@v4
+        with:
+          name: online-controls-global-seal
+          path: sealed/
+          retention-days: 90
+          if-no-files-found: error
+  evaluate:
+    needs: seal
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      max-parallel: 10
+      matrix:
+        start: [5000,5003,5006,5009,5012,5015,5018,5021,5024,5027,5030,5033,5036,5039,5042,5045,5048,5051,5054,5057]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: |
+          pip install torch==2.10.0 --index-url https://download.pytorch.org/whl/cpu
+          pip install numpy==2.3.5 pandas==2.2.3 scipy==1.17.0 scikit-learn==1.8.0
+      - uses: actions/download-artifact@v4
+        with:
+          name: online-controls-train-${{ matrix.start }}
+          path: artifact
+      - uses: actions/download-artifact@v4
+        with:
+          name: online-controls-global-seal
+          path: sealed
+      - name: Evaluate only after checking global seal
+        run: python experiments/online_information_controls.py evaluate --start ${{ matrix.start }} --end $(( ${{ matrix.start }} + 3 )) --output-dir artifact --global-seal sealed/global_seal.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: online-controls-eval-${{ matrix.start }}
+          path: artifact/
+          retention-days: 90
+          if-no-files-found: error
+  aggregate:
+    needs: evaluate
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: |
+          pip install torch==2.10.0 --index-url https://download.pytorch.org/whl/cpu
+          pip install numpy==2.3.5 pandas==2.2.3 scipy==1.17.0 scikit-learn==1.8.0
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: online-controls-eval-*
+          path: downloaded
+      - uses: actions/download-artifact@v4
+        with:
+          name: online-controls-global-seal
+          path: sealed
+      - name: Apply frozen Holm3 decision with complete grids
+        run: python experiments/online_information_controls.py aggregate --input-dir downloaded --output-dir aggregate --global-seal sealed/global_seal.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: online-information-controls-evidence
+          path: |
+            aggregate/
+            downloaded/
+            sealed/
+          retention-days: 90
+          if-no-files-found: error
