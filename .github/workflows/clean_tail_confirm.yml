@@ -1,5 +1,11 @@
 name: Clean-tail six-pool confirmation
 on:
+  push:
+    branches: ['experiment/clean-tail-six-pool-confirm']
+    paths:
+      - '.github/workflows/clean_tail_confirm.yml'
+      - 'experiments/clean_tail_confirm.py'
+      - 'experiments/verify_clean_tail.py'
   pull_request:
     types: [opened, reopened]
     branches: [main]
