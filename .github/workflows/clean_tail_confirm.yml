@@ -1,0 +1,212 @@
+name: Clean-tail six-pool confirmation
+on:
+  pull_request:
+    types: [opened, reopened]
+    branches: [main]
+    paths:
+      - '.github/workflows/clean_tail_confirm.yml'
+      - 'experiments/clean_tail_confirm.py'
+      - 'experiments/verify_clean_tail.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: clean-tail-six-pool-confirm-\${{ github.ref }}
+  cancel-in-progress: false
+env:
+  OMP_NUM_THREADS: '1'
+  MKL_NUM_THREADS: '1'
+  OPENBLAS_NUM_THREADS: '1'
+  NUMEXPR_NUM_THREADS: '1'
+  ISSUE124_BASE_SHA: 'bad12a2b2d13bcbb1172618515cd63534aeba3bc'
+jobs:
+  train:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      max-parallel: 20
+      matrix:
+        start: [6000,6003,6006,6009,6012,6015,6018,6021,6024,6027,6030,6033,6036,6039,6042,6045,6048,6051,6054,6057]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: \${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Pinned CPU dependencies
+        run: |
+          pip install torch==2.10.0 --index-url https://download.pytorch.org/whl/cpu
+          pip install numpy==2.3.5 pandas==2.2.3 scipy==1.17.0 scikit-learn==1.8.0
+      - name: Verify frozen protocol and scientific sources are unmodified
+        run: |
+          git diff --exit-code "$ISSUE124_BASE_SHA" -- \
+            docs/CLEAN_TAIL_CONFIRM_PROTOCOL.md \
+            experiments/common.py \
+            experiments/cnn_regime_interaction.py \
+            experiments/fixed_dose_response.py \
+            experiments/transfer_specificity.py \
+            experiments/parameter_matched_novelty_confirmatory.py \
+            experiments/parameter_matched_novelty_calibration.py
+      - name: Synthetic checks only before real outcomes
+        run: |
+          python experiments/clean_tail_confirm.py selftest
+          python experiments/verify_clean_tail.py selftest
+      - name: Train two policies without heldout construction
+        run: python experiments/clean_tail_confirm.py train --start \${{ matrix.start }} --end $(( \${{ matrix.start }} + 3 )) --output-dir artifact
+      - name: Archive actual source and backend
+        if: always()
+        run: |
+          mkdir -p artifact/source
+          cp experiments/*.py artifact/source/
+          cp docs/CLEAN_TAIL_CONFIRM_PROTOCOL.md artifact/
+          pip freeze > artifact/pip-freeze.txt
+          python --version > artifact/python-version.txt 2>&1
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: clean-tail-train-\${{ matrix.start }}
+          path: artifact/
+          retention-days: 90
+          if-no-files-found: error
+
+  seal:
+    needs: train
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: \${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Pinned validator runtime
+        run: |
+          pip install torch==2.10.0 --index-url https://download.pytorch.org/whl/cpu
+          pip install numpy==2.3.5 pandas==2.2.3 scipy==1.17.0 scikit-learn==1.8.0
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: clean-tail-train-*
+          path: downloaded
+      - name: Seal all 120 states before any heldout construction
+        run: python experiments/clean_tail_confirm.py seal --input-dir downloaded --output-dir sealed
+      - uses: actions/upload-artifact@v4
+        with:
+          name: clean-tail-global-seal
+          path: sealed/
+          retention-days: 90
+          if-no-files-found: error
+
+  evaluate:
+    needs: seal
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      max-parallel: 20
+      matrix:
+        start: [6000,6003,6006,6009,6012,6015,6018,6021,6024,6027,6030,6033,6036,6039,6042,6045,6048,6051,6054,6057]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: \${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Pinned evaluator runtime
+        run: |
+          pip install torch==2.10.0 --index-url https://download.pytorch.org/whl/cpu
+          pip install numpy==2.3.5 pandas==2.2.3 scipy==1.17.0 scikit-learn==1.8.0
+      - uses: actions/download-artifact@v4
+        with:
+          name: clean-tail-train-\${{ matrix.start }}
+          path: artifact
+      - uses: actions/download-artifact@v4
+        with:
+          name: clean-tail-global-seal
+          path: sealed
+      - name: Evaluate only after global seal validation
+        run: python experiments/clean_tail_confirm.py evaluate --start \${{ matrix.start }} --end $(( \${{ matrix.start }} + 3 )) --output-dir artifact --global-seal sealed/global_seal.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: clean-tail-eval-\${{ matrix.start }}
+          path: artifact/
+          retention-days: 90
+          if-no-files-found: error
+
+  aggregate:
+    needs: evaluate
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: \${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Pinned statistical runtime
+        run: |
+          pip install torch==2.10.0 --index-url https://download.pytorch.org/whl/cpu
+          pip install numpy==2.3.5 pandas==2.2.3 scipy==1.17.0 scikit-learn==1.8.0
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: clean-tail-eval-*
+          path: downloaded
+      - uses: actions/download-artifact@v4
+        with:
+          name: clean-tail-global-seal
+          path: sealed
+      - name: Apply frozen six-pool t5 decision
+        run: python experiments/clean_tail_confirm.py aggregate --input-dir downloaded --output-dir aggregate --global-seal sealed/global_seal.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: clean-tail-aggregate
+          path: aggregate/
+          retention-days: 90
+          if-no-files-found: error
+
+  verify:
+    needs: aggregate
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: \${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Pinned independent-verification runtime
+        run: |
+          pip install torch==2.10.0 --index-url https://download.pytorch.org/whl/cpu
+          pip install numpy==2.3.5 pandas==2.2.3 scipy==1.17.0 scikit-learn==1.8.0
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: clean-tail-eval-*
+          path: downloaded
+      - uses: actions/download-artifact@v4
+        with:
+          name: clean-tail-global-seal
+          path: sealed
+      - uses: actions/download-artifact@v4
+        with:
+          name: clean-tail-aggregate
+          path: aggregate
+      - name: Independently reconstruct hashes tensors grids counts and decisions
+        run: python experiments/verify_clean_tail.py verify --input-dir downloaded --global-seal sealed/global_seal.json --aggregate-dir aggregate --output-dir verification
+      - uses: actions/upload-artifact@v4
+        with:
+          name: clean-tail-confirmation-evidence
+          path: |
+            verification/
+            aggregate/
+            sealed/
+            downloaded/
+          retention-days: 90
+          if-no-files-found: error
