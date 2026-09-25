@@ -1,0 +1,20 @@
+{
+  "issue": 115,
+  "run_id": 34697985023,
+  "artifact_id": 10298969508,
+  "artifact_sha256": "cb26ff91a708bd5eb6e7efa049bbc93721fa3df62d728ffd4f580b79de530cb7",
+  "protocol_hash": "e27c10bd5643f173632387011a41f703686e2d47f9cbb7b4cb58d47bfccd509a",
+  "decision": "NO MEAN-TAIL TRADEOFF REPLICATION",
+  "n": 60,
+  "all_balance_manipulation_gates_pass": true,
+  "mean_accuracy_difference_fraction": 0.002979759167258935,
+  "mean_ci95_fraction": [-0.0024247710727645882, 0.008384289407282457],
+  "mean_one_sided_p": 0.13720167313361958,
+  "minimum_accuracy_difference_fraction": -0.0007004534204800923,
+  "minimum_ci95_fraction": [-0.009255781450999834, 0.00785487461003965],
+  "minimum_negative_direction_p": 0.4352131574768505,
+  "clean_accuracy_difference_fraction_exploratory": 0.03170580665270487,
+  "environment_sd_difference_fraction_exploratory": 0.007195887412962623,
+  "independent_full_audit": "pending",
+  "note": "Extracted from completed authoritative archive. No new training performed for this note. Non-significance is not equality or evidence of safety. Secondary endpoints do not upgrade the frozen primary outcome."
+}
