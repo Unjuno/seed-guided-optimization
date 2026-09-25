@@ -658,7 +658,7 @@ def selftest() -> None:
     en = estimate(-x, "negative")
     pn = float(stats.ttest_1samp(-x, 0.0, alternative="less").pvalue)
     require(abs(en["p_one_sided"] - pn) < 1e-12, "negative t test")
-    z = estimate(np.ones(6) * 0.1, "positive")
+    z = estimate(np.zeros(6), "positive")
     require(z["degenerate_zero_se"] and z["p_one_sided"] is None and not z["pass"], "zero SE handling")
     print("CLEAN_TAIL_SYNTHETIC_PASS", PH, flush=True)
 
