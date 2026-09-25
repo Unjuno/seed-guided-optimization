@@ -1,28 +1,33 @@
-# Research roadmap: evidence, not a list of desired positive findings
+# Research roadmap: evidence, not desired positive findings
 
-Updated2026-09-25. The owner requested autonomous experiment progress, including informative unexpected findings. Operational limits are in [AUTONOMOUS_RESEARCH_SCOPE](AUTONOMOUS_RESEARCH_SCOPE.md). X announcement remains paused.
+Updated2026-09-25. The owner requested autonomous experiment progress, including informative unexpected findings. [AUTONOMOUS_RESEARCH_SCOPE](AUTONOMOUS_RESEARCH_SCOPE.md) defines operational bounds. X announcement remains paused.
 
-A completed experiment is not necessarily a resolved mechanism. Preserve the registered decision, confidence interval and remaining alternatives. Do not change thresholds, metrics or repetitions to turn a valid negative result into PASS.
+A completed experiment is not necessarily a resolved mechanism. Preserve its registered decision, interval and alternatives. Do not alter thresholds, metrics, repetitions or pools to turn a valid negative result into PASS.
 
-| Question / experiment | Recorded status | What the evidence permits | Next discriminating step |
-|---|---|---|---|
-| Does higher centered residual spectral effective rank improve accuracy at matched mean novelty? Issue100 | Completed; primary performance support absent | Strong manipulation and balanced registered summaries, but +0.2072pp CI[-0.6916,+1.1060]; not proof of zero effect | Do not assume independent gradient span explains online SGO |
-| Can maximum pairwise opposition be separated from mean novelty and centered span? Issue103 | Completed; calibration infeasible at registered scale | Largest fixed span caliper yielded support87.25% and opposition gap0.07356 below required0.15; no performance test | A genuinely different intervention is needed, not a looser relabeling |
-| Can novelty be isolated while matching all seven physical-coordinate means/variances? Issue105 | Completed; severe overlap failure | Largest fixed physical caliper gave64/800 supported steps; no performance test | Consider controlled generator designs; current natural-family identification remains unresolved |
-| Does rank/hardness relaxation improve mean performance? Issue104 and fresh Issue115 | Initial support, fresh primary non-replication | Initial +0.9066pp; fresh60-block mean+0.2980pp CI[-0.2425,+0.8384] | Measure online alternatives and dependence on environment pools |
-| Can selected rank and actual selected hardness be separated? Issues112/113 | Completed; registered calibrations failed | Required manipulation at matched counterpart could not be produced with current family | Preserve joint rank/hardness interpretation, not either alone |
-| Does mean improvement come with lower minimum accuracy? Issue115 | Completed; NO MEAN-TAIL TRADEOFF REPLICATION | Neither registered endpoint passed; does not establish tail safety | Clean and environment-SD observations remain exploratory |
-| Is correct online gradient/environment correspondence useful beyond simple random relaxation? Issue121 | Preregistered; first run36137245500 submitted | No result is inferred before complete sealed evaluation | Compare online gradnov, loss-hard, anchored-random and sham-gradient policies across three fixed pools; Holm3 primary decision |
-| Is the exploratory clean-versus-shift pattern reproducible? | Open exploratory lead | Issue115 clean difference+3.1706pp and environment-SD difference+0.7196pp cannot upgrade its primary result | New independent, preregistered clean/shift interaction; no reusing those observations as confirmation |
-| Does any mechanism/generalization persist outside reused Digits images? | Open | New seeds do not constitute a new dataset | After policy controls, prospectively specified cross-dataset test without tuning on its test set |
-| GPU equal-cost practical value, Issue2 | Resource-blocked for measurement | CPU results and a runnable harness are not GPU evidence | Use actual authorized GPU hardware; no automatic paid provisioning |
+| Question / experiment | Recorded status | Evidence and remaining limitation |
+|---|---|---|
+| Centered residual spectral rank at matched novelty, Issue100 | Completed; primary support absent | Successful manipulation; +0.2072pp CI[-0.6916,+1.1060]. Not proof of zero effect. |
+| Opposition separated from mean novelty/span, Issue103 | Completed; calibration failure | Largest frozen caliper yielded87.25%support and opposition gap0.07356 below required0.15; no performance test. |
+| Novelty matched on all7physical-coordinate means/variances, Issue105 | Completed; severe overlap failure | At most64/800supported steps; natural candidate-family identification remains unresolved. |
+| Rank/hardness relaxation, Issues104/115 | Initial support; fresh primary non-replication | Initial+0.9066pp; fresh60-block mean+0.2980pp CI[-0.2425,+0.8384]. |
+| Rank versus actual selected hardness, Issues112/113 | Completed; calibration failures | Required independent manipulation could not be produced with this family. Preserve joint interpretation. |
+| Mean improvement with minimum deterioration, Issue115 | Completed; NO MEAN-TAIL TRADEOFF REPLICATION | Neither registered performance endpoint passed, despite matching/manipulation. Clean/SD findings remain secondary. |
+| Correct online gradient correspondence beyond simple controls, Issue121 | Completed; ONLINE GRADIENT-INFORMATION CONTROL SUPPORT | Gradnov versus loss-hard+2.6717pp, versus shuffled-gradients+2.0703pp, versus anchored-random+0.6770pp; all Holm3 one-sided criteria pass. Anchored-random two-sided interval crosses zero. Not a unique-mediator result. |
+| Online clean-versus-tail policy tradeoff | Fresh confirmation preregistered; NOT YET EXECUTED | Issue121 secondary clean-7.1487pp and minimum+3.7536pp versus anchored-random motivate [six-pool confirmation](CLEAN_TAIL_CONFIRM_PROTOCOL.md), not retroactive support. |
+| Online loss/rank-matched policy specificity | Open; design required | Existing online policies differ in loss/rank. Require an identifying control/support audit before unique mechanism claims. |
+| Transfer beyond reused Digits images | Open | New seeds are not a new dataset. A prospective cross-dataset test is needed after the relevant policy/mechanism controls. |
+| GPU matched-cost value, Issue2 | Measurement resource-dependent | CPU evidence and a runnable harness are not GPU evidence. Use only actual authorized hardware; no automatic paid provisioning. |
+
+## Current next execution
+
+[CLEAN_TAIL_CONFIRM_PROTOCOL](CLEAN_TAIL_CONFIRM_PROTOCOL.md) freezes a NEW60-block,2-policy experiment across6fresh environment pools. Primary inference uses6pool averages, not60models treated as60independent pools. All120states must be sealed before heldout construction. Both positive minimum contrast and negative clean contrast are required for the compound tradeoff claim. Secondary mean/p10/SD endpoints cannot rescue a failed primary criterion. No fresh outcomes for this follow-up were generated in the registration cycle.
 
 ## Completion criteria
 
-For each finite experiment: committed protocol, synthetic checks, complete execution or a documented failure, immutable outcome evidence, independent numerical checks, and a report stating the limits. A question remains inconclusive when its interval or overlap does not discriminate the alternatives. It is not silently marked solved when its Issue is closed.
+Each finite experiment requires a committed protocol, synthetic checks, complete execution or documented failure, outcome evidence, independent numerical checks and an explicit scope/limitations report. An interval crossing scientifically relevant alternatives remains inconclusive; closing its Issue does not silently solve the mechanism.
 
-For the mechanism roadmap: at least one intervention must distinguish a named alternative with acceptable support and a fresh confirmation; the explanation must connect back to the original online policy. Neither a matched scalar contrast nor an optimizer benchmark alone establishes a unique causal mechanism.
+The mechanism roadmap requires distinguishing named alternatives with adequate support and fresh confirmation, and connecting the explanation back to the original online policy. Issue121 provides a policy-specificity result against the registered sham and simple controls; it does not alone establish how all intermediate properties cause learning improvements.
 
-## Stop and continuation rule
+## Continuation and stop rule
 
-First finish/audit the active registered experiment. Use existing data only for labeled exploration and test a new claim on prospectively fixed fresh blocks. At most one new bounded CPU experiment is submitted per continuation cycle. Stop new computation and report when remaining tasks require external hardware/data/owner policy choices, or no adequately identifying intervention has been specified. Never replace a blocked scientific question with a fabricated positive conclusion.
+First finish/audit any active registered experiment. Old data are for labeled exploration; new confirmatory claims use prospectively fixed new blocks/pools. Submit at most one bounded CPU experiment per continuation cycle. When remaining tasks require external hardware/data/owner policy choices or no identifying design is specified, report and pause that branch rather than repeat valid failures, weaken thresholds or claim success. A finite queue can be completed while the broader scientific problem remains open.
