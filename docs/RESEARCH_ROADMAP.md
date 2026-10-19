@@ -1,6 +1,6 @@
 # Research roadmap: evidence, not desired positive findings
 
-Updated2026-09-25. The owner requested autonomous experiment progress, including informative unexpected findings. [AUTONOMOUS_RESEARCH_SCOPE](AUTONOMOUS_RESEARCH_SCOPE.md) defines operational bounds. X announcement remains paused.
+Updated2026-10-19. The owner requested autonomous experiment progress, including informative unexpected findings. [AUTONOMOUS_RESEARCH_SCOPE](AUTONOMOUS_RESEARCH_SCOPE.md) defines operational bounds. X announcement remains paused.
 
 A completed experiment is not necessarily a resolved mechanism. Preserve its registered decision, interval and alternatives. Do not alter thresholds, metrics, repetitions or pools to turn a valid negative result into PASS.
 
@@ -13,14 +13,19 @@ A completed experiment is not necessarily a resolved mechanism. Preserve its reg
 | Rank versus actual selected hardness, Issues112/113 | Completed; calibration failures | Required independent manipulation could not be produced with this family. Preserve joint interpretation. |
 | Mean improvement with minimum deterioration, Issue115 | Completed; NO MEAN-TAIL TRADEOFF REPLICATION | Neither registered performance endpoint passed, despite matching/manipulation. Clean/SD findings remain secondary. |
 | Correct online gradient correspondence beyond simple controls, Issue121 | Completed; ONLINE GRADIENT-INFORMATION CONTROL SUPPORT | Gradnov versus loss-hard+2.6717pp, versus shuffled-gradients+2.0703pp, versus anchored-random+0.6770pp; all Holm3 one-sided criteria pass. Anchored-random two-sided interval crosses zero. Not a unique-mediator result. |
-| Online clean-versus-tail policy tradeoff | Fresh confirmation preregistered; NOT YET EXECUTED | Issue121 secondary clean-7.1487pp and minimum+3.7536pp versus anchored-random motivate [six-pool confirmation](CLEAN_TAIL_CONFIRM_PROTOCOL.md), not retroactive support. |
+| Online clean-versus-tail policy tradeoff, Issue124 | **Completed; preregistered two-part SUPPORT** | First complete run36202615155: six fresh pools, gradnov versus anchored-random minimum+4.3016pp and clean−7.5052pp; both directional conditions pass. Finite 80-environment minimum only; [frozen result](ROADMAP_VALIDATION_20260926_RESULT.md). |
 | Online loss/rank-matched policy specificity | Open; design required | Existing online policies differ in loss/rank. Require an identifying control/support audit before unique mechanism claims. |
-| Transfer beyond reused Digits images | Open | New seeds are not a new dataset. A prospective cross-dataset test is needed after the relevant policy/mechanism controls. |
+| Native Fashion-MNIST (Issue125), limited cross-dataset transfer | **Completed; two of three directional contrasts PASS** | On a new image dataset (988 train/809 test), anchor−loss-hard mean+1.2008pp and gradnov−anchor minimum+3.3725pp pass Holm3; gradnov−anchor mean−0.0186pp does not. Broader full-dataset/model transfer still open. |
+| Objective × estimator × optimizer-configuration validation, Issue125 | **Completed; mixed evidence** | Full16 estimator contrasts PASS in AdamW and SGD configuration, but unequal contributor count forbids cost inference. AdamW interaction PASS after Holm7; SGD interaction and configuration difference unconfirmed. [Frozen result](ROADMAP_VALIDATION_20260926_RESULT.md). |
 | GPU matched-cost value, Issue2 | Measurement resource-dependent | CPU evidence and a runnable harness are not GPU evidence. Use only actual authorized hardware; no automatic paid provisioning. |
 
 ## Current next execution
 
-[CLEAN_TAIL_CONFIRM_PROTOCOL](CLEAN_TAIL_CONFIRM_PROTOCOL.md) freezes a NEW60-block,2-policy experiment across6fresh environment pools. Primary inference uses6pool averages, not60models treated as60independent pools. All120states must be sealed before heldout construction. Both positive minimum contrast and negative clean contrast are required for the compound tradeoff claim. Secondary mean/p10/SD endpoints cannot rescue a failed primary criterion. No fresh outcomes for this follow-up were generated in the registration cycle.
+The existing Issue124/Issue125 finite queue has been **executed and independently audited**. PR #126 archives the implementation and pooled results; [six-pool scientific outcomes](ROADMAP_VALIDATION_20260926_RESULT.md) distinguish scientific support/non-support from technical job completion. Do **not** rerun valid experiments or change frozen gates in response to mixed outcomes.
+
+Next identification problem: disentangle **correctly associated gradient information** from online selected-hardness/rank and physical-factor allocation using a *new preregistered* intervention with overlap feasibility. It must preserve a baseline and strong random controls, use independent heldout pools, and prevent performance inspection before the selection policy is sealed. Existing natural-subset matching failures warn that naïvely adding calipers is unlikely to work. No fresh confirmatory CPU run was launched as part of the October 19 artifact audit.
+
+The GPU matched-cost branch (Issue #2) remains hardware-blocked until authorized CUDA compute is available; never fill that gap with CPU elapsed-time extrapolation. X publication remains paused.
 
 ## Completion criteria
 
