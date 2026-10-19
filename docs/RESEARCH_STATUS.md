@@ -1,6 +1,16 @@
 # Research status
 
-Updated2026-09-25. Results are conditional on task, comparison, measurement and frozen rule. A PASS, a matching gate, or a closed Issue does not identify a unique mediator. [Research roadmap](RESEARCH_ROADMAP.md) separates completed experiments from unresolved mechanisms and resource-dependent measurements.
+Updated2026-10-19 (September 26 experiments independently audited). Results are conditional on task, comparison, measurement and frozen rule. A PASS, a matching gate, or a closed Issue does not identify a unique mediator. [Research roadmap](RESEARCH_ROADMAP.md) separates completed experiments from unresolved mechanisms and resource-dependent measurements.
+
+## New six-pool registered validation: PR #126
+
+[Full frozen result and integrity audit](ROADMAP_VALIDATION_20260926_RESULT.md). The first complete valid run on 2026-09-26 finished all **840** study states; an independent 2026-10-19 audit verified **840 model tensor digests, 840 selection traces, 68,040 integer-count rows and all 12 registered t5/Holm decisions**. The training/evaluation barriers passed before any heldout generation.
+
+- **Issue124, new Digits clean-versus-shift policy comparison:** gradnov minus hardest-plus-random-three gave **+4.302 pp** finite-pool minimum and **−7.505 pp** clean accuracy; both pre-fixed directional tests pass over **six** pool means. This is not universal worst-case robustness.
+- **Issue125 Fashion-MNIST transfer (988/809 selected native 28×28 images):** anchored random minus loss-hard heldout mean **+1.201 pp** (Holm3 PASS), gradnov minus anchor minimum **+3.372 pp** (Holm3 PASS), but gradnov minus anchor heldout mean **−0.019 pp** (**not supported**). Thus positive conditional *minimum* results extend to another image dataset, not a full-data-set benchmark or uniqueness result.
+- **Issue125 Digits optimizer factorial:** full-16 versus four-contributor estimator main contrasts PASS for AdamW (**+4.698 pp**) and SGD configuration (**+1.164 pp**), but are **not equal-compute**. AdamW objective×estimator interaction **−1.948 pp** passes Holm7; SGD interaction **−2.054 pp** does **not** pass Holm7; three-way interaction **−0.106 pp** does not pass. Configuration-level comparison does not isolate optimizer-algorithm causes.
+
+See [public pool-level CSVs](../results/roadmap_validation_20260926_pool_contrasts.csv), [frozen primary decisions](../results/roadmap_validation_20260926_primary.csv) and `python scripts/check_roadmap_validation_results.py` for statistic-only replication. The full GitHub Actions artifacts have finite retention and must not be mistaken for permanent storage.
 
 ## Latest completed online control experiment
 
@@ -62,4 +72,4 @@ Blocks, not environments or steps, are statistical repetitions. Images and speci
 
 ## Next discrimination and publication
 
-Independently confirm the clean/tail exploratory contrast on fresh environment pools; then test whether the correctly associated gradient policy retains its advantage under a suitable online loss/rank control. Matching failures require a genuinely identifying design, not threshold relaxation. Follow [the roadmap](RESEARCH_ROADMAP.md) and [bounded research scope](AUTONOMOUS_RESEARCH_SCOPE.md). X announcement remains paused at the owner's request.
+The clean/minimum two-policy tradeoff is now **confirmed only within the registered finite Digits generator/pools**; a new limited Fashion task additionally supports finite-pool minimum contrast but not mean superiority of gradnov over the anchored policy. Next identify policy differences in selected loss/rank, factor allocation and resulting update trajectories with a fresh feasible intervention; the current results do not identify a unique mediator. Broad dataset/task universality, adversarial worst-case guarantees, equal-wall-clock performance and GPU-optimal candidate counts remain unresolved. Follow [the roadmap](RESEARCH_ROADMAP.md). X announcement remains paused at the owner's request.
