@@ -90,6 +90,10 @@ This checks only the public six-pool CSVs and twelve statistical decisions, **no
 
 Unit check: accuracy, contrast, SE and confidence intervals are dimensionless fractions. **1 percentage point = 0.01 accuracy fraction**; multiply fractional effects by 100 to display pp. No physical duration/energy efficiency is measured.
 
+## Post-hoc six-pool inference sensitivity
+
+The registration's **t5/Holm decisions above are frozen**. An additional after-outcome [exact sign-flip sensitivity analysis](SIX_POOL_SIGNFLIP_SENSITIVITY_20261019.md) found that the two Digits tradeoff components individually yield p=0.015625, but the Fashion t5/Holm3 PASS contrasts yield sign-flip Holm3 p=0.09375 and the optimizer t5/Holm7 PASS contrasts yield sign-flip Holm7 p>=0.21875. With only six independent pools, the latter two-sided Holm7 sign-flip family has minimum possible adjusted p=0.21875. Interpret this as **small-n model/discreteness sensitivity**, not a revision of preregistered outcomes or proof of a null effect. More independent environments/pools would be necessary for a stronger distribution-robust claim.
+
 ## Next research gate
 
 The original *online* policy's gradient-information specificity, conditional losses/ranks, and physical-factor allocation still need an identifying design. Do not recast this result as a proof that head-gradient novelty alone causes the tail benefit. A new confirmatory intervention must be preregistered with fresh blocks and an independent matching/support audit. GPU matched-cost value remains blocked on authorized CUDA hardware. The owner requested **no X announcement yet**.
