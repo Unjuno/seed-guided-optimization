@@ -12,6 +12,10 @@ Updated2026-10-19 (September 26 experiments independently audited). Results are 
 
 See [public pool-level CSVs](../results/roadmap_validation_20260926_pool_contrasts.csv), [frozen primary decisions](../results/roadmap_validation_20260926_primary.csv) and `python scripts/check_roadmap_validation_results.py` for statistic-only replication. The full GitHub Actions artifacts have finite retention and must not be mistaken for permanent storage.
 
+### Post-hoc six-pool sensitivity (October 19)
+
+[Exact sign-flip sensitivity report](SIX_POOL_SIGNFLIP_SENSITIVITY_20261019.md): Digits' two clean/minimum contrast components each have one-sided sign-flip p=0.015625 over the six pools. However the Fashion contrasts that PASS under the preregistered t5/Holm3 have sign-flip Holm3 p=0.09375; the optimizer t5/Holm7 PASS contrasts have sign-flip Holm7 p>=0.21875. The latter test is intrinsically discrete/low-powered with six pools (its minimum possible two-sided Holm7 p is 0.21875). **The registered decisions remain unchanged**, but their parametric assumptions and limited pool count must be disclosed. This post-hoc check neither proves null effects nor promotes an unregistered result.
+
 ## Latest completed online control experiment
 
 [Issue121 online controls](ONLINE_CONTROL_RESULT.md), first valid run36137245500, used60fresh training blocks across three fixed environment pools. All240states were globally sealed before heldout construction. Each policy selected on its own current model state: original gradnov, loss-hard, hardest-plus-random-three, and gradnov with shuffled gradient/candidate correspondence.
