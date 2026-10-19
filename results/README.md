@@ -8,6 +8,12 @@
 
 正答率・正答率差のCSVは割合です。`0.01`は1パーセントポイント。`rep`は学習反復の識別子で、同じ画像・環境群を評価した複数行を独立反復として数えません。信頼区間は各実験で固定した画像・環境群に条件づけたものです。標準化したmatchingスコアは無次元であり、正答率とは別の量です。
 
+## 新しい6環境群の検算用CSV（Issue #124/#125）
+
+| 試験 | 主なCSV | 比較の意味 |
+|---|---|---|
+| [PR #126：登録済み12検定](roadmap_validation_20260926_primary.csv) | [6環境群の72主要差分](roadmap_validation_20260926_pool_contrasts.csv) | Digitsのclean–minimumトレードオフ、少数Fashion画像での転用、objective×estimator×optimizer構成。区間は6環境群t5の点ごとの区間。確認は `python scripts/check_roadmap_validation_results.py`。 |
+ 
 ## 最近の確認試験と失敗
 
 | 試験 | 主なCSV | 比較の意味 |
