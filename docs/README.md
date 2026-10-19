@@ -17,6 +17,12 @@
 | 過去の設計・統計ルール | [METHODS](METHODS.md) |
 | X用告知の草案 | [SHARE_ON_X](SHARE_ON_X.md)（現在、告知は保留） |
 
+## 追加確認：2026年9月26日の登録試験・10月19日の独立監査
+
+| 試験 | 結果・論点 |
+|---|---|
+| [PR #126・Issue #124/#125：840モデル、6環境群×3試験](ROADMAP_VALIDATION_20260926_RESULT.md) | Digitsでgradnovのfinite-pool最小性能+4.302 pp／clean−7.505 ppを登録確認。限定的Fashion転用でランダム混合の平均性能改善とgradnovの最低性能改善を確認する一方、gradnov平均追加優位は未支持。optimizer factorialの交互作用もHolm7で支持・未支持を区別。独立に840状態と12検定を照合。 |
+ 
 ## 2026年9月25日に確定した結果
 
 | 試験 | 結果・論点 |
