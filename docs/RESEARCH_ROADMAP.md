@@ -19,6 +19,8 @@ A completed experiment is not necessarily a resolved mechanism. Preserve its reg
 | Objective × estimator × optimizer-configuration validation, Issue125 | **Completed; mixed evidence** | Full16 estimator contrasts PASS in AdamW and SGD configuration, but unequal contributor count forbids cost inference. AdamW interaction PASS after Holm7; SGD interaction and configuration difference unconfirmed. [Frozen result](ROADMAP_VALIDATION_20260926_RESULT.md). |
 | GPU matched-cost value, Issue2 | Measurement resource-dependent | CPU evidence and a runnable harness are not GPU evidence. Use only actual authorized hardware; no automatic paid provisioning. |
 
+Small-sample interpretation: see the [post-hoc exact six-pool sign-flip sensitivity](SIX_POOL_SIGNFLIP_SENSITIVITY_20261019.md); the original t5/Holm successes were not re-scored. Future high-stakes Fashion and optimizer claims need a justified sample-size plan with more independent environment pools, rather than expanding the existing registered sample after seeing its outcome.
+
 ## Current next execution
 
 The existing Issue124/Issue125 finite queue has been **executed and independently audited**. PR #126 archives the implementation and pooled results; [six-pool scientific outcomes](ROADMAP_VALIDATION_20260926_RESULT.md) distinguish scientific support/non-support from technical job completion. Do **not** rerun valid experiments or change frozen gates in response to mixed outcomes.
