@@ -23,6 +23,7 @@
 |---|---|
 | [PR #126・Issue #124/#125：840モデル、6環境群×3試験](ROADMAP_VALIDATION_20260926_RESULT.md) | Digitsでgradnovのfinite-pool最小性能+4.302 pp／clean−7.505 ppを登録確認。限定的Fashion転用でランダム混合の平均性能改善とgradnovの最低性能改善を確認する一方、gradnov平均追加優位は未支持。optimizer factorialの交互作用もHolm7で支持・未支持を区別。独立に840状態と12検定を照合。 |
 | [オンライン選択履歴の探索解析：rank/hardness交絡](ROADMAP_POLICY_TRACE_EXPLORATORY_20261019.md) | Digits・Fashionともにgradnovはランダム混合より約3.5順位分、損失が高い候補を選んだ。後から見つけた説明候補であり、確証的因果結果ではない。 |
+| [6環境群の符号反転感度解析](SIX_POOL_SIGNFLIP_SENSITIVITY_20261019.md) | 登録済みt5/Holm判定を保持しつつ、6群ゆえの少標本・離散p値への依存を提示。Fashion/optimizerのPASSはこの別検定では支持されない。 |
  
 ## 2026年9月25日に確定した結果
 
