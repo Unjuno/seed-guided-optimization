@@ -1,6 +1,16 @@
 # Research status
 
-Updated 2026-11-06.
+Updated 2026-11-07.
+
+## Preregistered switch-time boundary, Issue131 (2026-11-07)
+
+[Full result and audit](SWITCH_TIME_BOUNDARY_RESULT_20261107.md), [prospective Issue131 with v1 invalid/v2 amended source hashes](https://github.com/Unjuno/seed-guided-optimization/issues/131). Fresh **12 transform pools ×4 new inits ×4 policy arms = 192 states** with unchanged historical Digits image split, globally sealed before heldout creation; 38,400 applied steps; independent source/hash audit, 9,216 heldout rows, 3 preregistered t11/Holm3 tests all reproduced.
+
+- **T100 vs always Muon: +0.025832 CE**, CI [+0.001760,+0.049905], Holm3 p=.037690 **SUPPORT**.
+- **T100 vs switch T80: −0.010962 CE**, CI [−0.015430,−0.006494], directional Holm3 p=.999892 **NOT SUPPORTED**; reversed sign in **all 12 pools**, not a preregistered success of T80.
+- **T100 vs switch T120: +0.013302 CE**, CI [+0.008738,+0.017867], Holm3 p=.00007473 **SUPPORT**.
+
+The preregistered conjunction claiming a narrow peak at update100 **FAILED**. Descriptive shifted CE is lowest for T80 (1.177579), but clean CE is lowest when Muon is maintained (0.804520). **Changing the evaluation objective changes the preferred policy.** A post-outcome linear mix of clean/shifted CE produces *sample-only* weight boundaries w=.562438/.623979, not a calibrated universal switch criterion. Source/optimizer-handoff code is in owner full-evidence archive, **not mirrored to GitHub**; GitHub checker verifies aggregate statistics only. Prior failed v1 JSON preflight produced **zero models**, preserved separately; v2 amendment preceded all outcomes. No new-image, unique geometry or cost/speed inference.
 
 ## New retrospective local Muon/AdamW optimizer-switching pilot (2026-10-31)
 
