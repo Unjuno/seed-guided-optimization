@@ -6,7 +6,7 @@
 
 ## 新しいOptimizer切替・初期Seed実験の公開統計（2026年10月31日、外部事前登録なし）
 
-[主な5検定](switch_seed_20261031_primary_decisions.csv) と [12プール×5比較の差](switch_seed_20261031_pool_differences.csv)。自然対数のCE（無次元）で、正の差は対象方式の損失が低いことを意味する。**0.01 CEは正答率の1 ppではない**。統計単位は12環境群。\`python scripts/check_switch_seed_results.py\` によりHolm5・95%点別区間・符号反転感度解析を**記録済みペア差だけから**検算可能。checkpointと推論の再現はこのCSVのみではできない。[手法・陰性結果・事後解析](../docs/OPTIMIZER_SWITCH_SEED_RESULT_20261031.md)。
+[主な5検定](switch_seed_20261031_primary_decisions.csv) と [12プール×5比較の差](switch_seed_20261031_pool_differences.csv)。自然対数のCE（無次元）で、正の差は対象方式の損失が低いことを意味する。**0.01 CEは正答率の1 ppではない**。統計単位は12環境群。`python scripts/check_switch_seed_results.py` によりHolm5・95%点別区間・符号反転感度解析を**記録済みペア差だけから**検算可能。checkpointと推論の再現はこのCSVのみではできない。[手法・陰性結果・事後解析](../docs/OPTIMIZER_SWITCH_SEED_RESULT_20261031.md)。
 
 ## 単位と反復
 
