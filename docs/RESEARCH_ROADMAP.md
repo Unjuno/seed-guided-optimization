@@ -1,6 +1,6 @@
 # Research roadmap: evidence, not desired positive findings
 
-Updated2026-10-19. The owner requested autonomous experiment progress, including informative unexpected findings. [AUTONOMOUS_RESEARCH_SCOPE](AUTONOMOUS_RESEARCH_SCOPE.md) defines operational bounds. X announcement remains paused.
+Updated2026-11-06. The owner requested autonomous experiment progress, including informative unexpected findings. [AUTONOMOUS_RESEARCH_SCOPE](AUTONOMOUS_RESEARCH_SCOPE.md) defines operational bounds. X announcement remains paused.
 
 A completed experiment is not necessarily a resolved mechanism. Preserve its registered decision, interval and alternatives. Do not alter thresholds, metrics, repetitions or pools to turn a valid negative result into PASS.
 
@@ -17,11 +17,15 @@ A completed experiment is not necessarily a resolved mechanism. Preserve its reg
 | Online loss/rank-matched policy specificity | Open; design required | Existing online policies differ in loss/rank. Require an identifying control/support audit before unique mechanism claims. |
 | Native Fashion-MNIST (Issue125), limited cross-dataset transfer | **Completed; two of three directional contrasts PASS** | On a new image dataset (988 train/809 test), anchor−loss-hard mean+1.2008pp and gradnov−anchor minimum+3.3725pp pass Holm3; gradnov−anchor mean−0.0186pp does not. Broader full-dataset/model transfer still open. |
 | Objective × estimator × optimizer-configuration validation, Issue125 | **Completed; mixed evidence** | Full16 estimator contrasts PASS in AdamW and SGD configuration, but unequal contributor count forbids cost inference. AdamW interaction PASS after Holm7; SGD interaction and configuration difference unconfirmed. [Frozen result](ROADMAP_VALIDATION_20260926_RESULT.md). |
+| Initialization-seed × Muon/AdamW switching (local pilot, Issue129) | **Completed locally; automated controller/early seed advantage unestablished** | 192 trajectories: D vs A +0.06970 CE (Holm5 PASS); D vs M +0.00819 (NOT SUPPORTED); D vs one-way switch at step100 −0.02567 (D superiority NOT SUPPORTED); early D seed selection −0.00313 (NOT SUPPORTED). [Retrospective archive](OPTIMIZER_SWITCH_SEED_RESULT_20261031.md), **not external preregistration**. Raw ZIP not yet mirrored. |
+| Optimizer-aware long-horizon switching/seed selection | **OPEN — separate confirmatory design needed** | A five-update control test missed 20/48 same-state cases where step100→200 continuation preferred AdamW. Next calibrate long-horizon prediction and update norm on development-only data, then fresh pools/images and fixed budget against strong fixed-switch baseline. Do not reuse old test to select trigger. |
 | GPU matched-cost value, Issue2 | Measurement resource-dependent | CPU evidence and a runnable harness are not GPU evidence. Use only actual authorized hardware; no automatic paid provisioning. |
 
 ## Current next execution
 
 The existing Issue124/Issue125 finite queue has been **executed and independently audited**. PR #126 archives the implementation and pooled results; [six-pool scientific outcomes](ROADMAP_VALIDATION_20260926_RESULT.md) distinguish scientific support/non-support from technical job completion. Do **not** rerun valid experiments or change frozen gates in response to mixed outcomes.
+
+Optimizer switching and initialization-seed compatibility are now separate roadmap branches: the short-lookahead D policy did not beat the strong fixed-time S control, and a step40 early seed selector did not improve final CE. The next finite experiment should isolate a **predictor of long-run switching advantage**, measured on development-only states with a frozen residual compute budget. It must compare to fixed S and M, not just A; state handoff, learning-rate/norm calibration and cumulative branch cost must be controlled. This proposal is NOT a new registered performance test.
 
 Next identification problem: disentangle **correctly associated gradient information** from online selected-hardness/rank and physical-factor allocation using a *new preregistered* intervention with overlap feasibility. It must preserve a baseline and strong random controls, use independent heldout pools, and prevent performance inspection before the selection policy is sealed. Existing natural-subset matching failures warn that naïvely adding calipers is unlikely to work. No fresh confirmatory CPU run was launched as part of the October 19 artifact audit.
 
