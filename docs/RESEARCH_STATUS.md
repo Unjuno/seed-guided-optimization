@@ -1,6 +1,18 @@
 # Research status
 
-Updated2026-10-19 (September 26 experiments independently audited). Results are conditional on task, comparison, measurement and frozen rule. A PASS, a matching gate, or a closed Issue does not identify a unique mediator. [Research roadmap](RESEARCH_ROADMAP.md) separates completed experiments from unresolved mechanisms and resource-dependent measurements.
+Updated 2026-11-06.
+
+## New retrospective local Muon/AdamW optimizer-switching pilot (2026-10-31)
+
+[Full 12-pool analysis and limitations](OPTIMIZER_SWITCH_SEED_RESULT_20261031.md), [Issue129](https://github.com/Unjuno/seed-guided-optimization/issues/129). **Locally frozen before training, but NOT externally preregistered; GitHub archive added after results.** All 192 MLP/Digits training trajectories (12 pools ×4 initializations ×4 policies), 576 checkpoints, final counts and five in-session frozen tests were rechecked on 2026-11-06. Remote GitHub contains the summary CSV/checker and retrospective report; **full weights/raw code are held in the originating conversation's ZIP, not mirrored in this repository**.
+
+- Adaptive D vs fixed AdamW A: **+0.069704 CE decrease**, 95% pointwise CI [+0.048237,+0.091171], Holm5 p=0.00004692 **SUPPORT**.
+- Adaptive D vs fixed Muon M: +0.008190 CE, CI [−0.002574,+0.018954], p=0.183245 **NOT SUPPORTED**.
+- Adaptive D vs one-way fixed Muon→AdamW switch at 100 updates S: **−0.025667 CE**, CI [−0.040767,−0.010567], registered adaptive-superiority **NOT SUPPORTED**. Descriptively S has the lowest mean CE (S1.146800, D1.172467, M1.180657, A1.242171). This alone is NOT fresh confirmatory proof of a generally best switching time.
+- Early step40 seed selection within D: −0.003127 CE, p=1 **NOT SUPPORTED**. D+early-selected seed vs baseline selecting a fixed method/seed early: +0.062071 CE, p=0.00091096 **SUPPORT**, but the baseline selected AdamW **12/12 pools**, so no universal seed-selection gain follows.
+- **Post-outcome only:** in 48 matched step100 states, five-update control preference chose continued Muon in 20 cases where 100-update continuation favored switching to AdamW (15 strict rank reversals, five hysteresis-margin cases). The controller used 240 vs200 gradient evaluations, plus extra forward/copy work, and both shadow optimizer proposals were evaluated in all policies; **no equal-cost superiority claim**.
+
+The experiment manipulates **optimizer switching and separately early initial-weight seed selection**, not online transformation-seed SGO. No unique favorable optimizer region, optimizer-state mediator, robust universal seed or GPU speedup has been identified.
 
 ## New six-pool registered validation: PR #126
 
