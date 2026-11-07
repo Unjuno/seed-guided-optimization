@@ -1,6 +1,18 @@
 # Research status
 
-Updated 2026-11-07.
+Updated 2026-11-08.
+
+## Fresh early-switch confirmation and clean guardrail, Issue133 (2026-11-08)
+
+[Full prospective result](SWITCH_TIME_EARLY_RESULT_20261108.md) and [pre-outcome Issue133](https://github.com/Unjuno/seed-guided-optimization/issues/133): **12 new independent transform pools×4 new initializations×4 fixed Muon/AdamW policies=192 models**. Globally seal all checkpoints before constructing heldout environments; 38,400 training updates, 9,216 heldout rows, 192 clean rows. Independent SHA+integer-count audit and all registered decisions checked.
+
+- T60 vs Muon throughout: **+0.035709 CE**, pointwise95%CI[+.015015,+.056404], Holm3 one-sided p=.002954 **SUPPORT**.
+- T60 vs T40: **+0.020442 CE**, CI[+.012904,+.027980], p=.000140 **SUPPORT**.
+- T60 vs T80: **+0.004231 CE**, CI[−.002634,+.011096], p=.101060 **NOT SUPPORTED**. The preregistered T60 interior peak **fails**.
+- **CLEAN guardrail FAILS:** CE_clean(T60)−CE_clean(M)=**+.108709 CE**, CI[+.059690,+.157728], registered one-sided noninferiority test with +.05 margin p=.988422. Shifted-CE gains are **not clean-safe**.
+- Sample-only, **post-outcome** mixture w between clean and transformed CE: M preferred for w<.691956, T80 for .691956<w<.899812, T60 for w>.899812. These are not learned or validated switching thresholds.
+
+New transformation keys/init seeds only, the same historical Digits test images; no new-image, mixed-task, GPU, equal production compute, universal “optimizer-favorable region” or **seed-selection** claim. The full state/source archive exists in the owner's conversation ZIP, **not GitHub**; public CI validates summary statistics only.
 
 ## Preregistered switch-time boundary, Issue131 (2026-11-07)
 
