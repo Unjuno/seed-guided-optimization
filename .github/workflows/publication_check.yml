@@ -19,6 +19,12 @@ on:
       - 'scripts/check_roadmap_validation_results.py'
       - 'scripts/check_switch_seed_results.py'
       - 'scripts/check_switch_time_boundary_20261107.py'
+      - 'scripts/check_switch_early_20261108.py'
+      - 'docs/SWITCH_TIME_EARLY_RESULT_20261108.md'
+      - 'results/switch_early_20261108_primary.csv'
+      - 'results/switch_early_20261108_pools.csv'
+      - 'results/switch_early_20261108_clean_guardrail_pools.csv'
+      - 'results/switch_early_20261108_policy_means.csv'
       - 'docs/SWITCH_TIME_BOUNDARY_RESULT_20261107.md'
       - 'results/switch_time_20261107_primary.csv'
       - 'results/switch_time_20261107_pool_differences.csv'
@@ -53,6 +59,12 @@ on:
       - 'scripts/check_roadmap_validation_results.py'
       - 'scripts/check_switch_seed_results.py'
       - 'scripts/check_switch_time_boundary_20261107.py'
+      - 'scripts/check_switch_early_20261108.py'
+      - 'docs/SWITCH_TIME_EARLY_RESULT_20261108.md'
+      - 'results/switch_early_20261108_primary.csv'
+      - 'results/switch_early_20261108_pools.csv'
+      - 'results/switch_early_20261108_clean_guardrail_pools.csv'
+      - 'results/switch_early_20261108_policy_means.csv'
       - 'docs/SWITCH_TIME_BOUNDARY_RESULT_20261107.md'
       - 'results/switch_time_20261107_primary.csv'
       - 'results/switch_time_20261107_pool_differences.csv'
@@ -93,6 +105,8 @@ jobs:
         run: python scripts/check_switch_seed_results.py
       - name: Recompute prospective switch-time 12-pool Holm3 statistics
         run: python scripts/check_switch_time_boundary_20261107.py
+      - name: Recalculate early-switch registered Holm3 and clean guardrail
+        run: python scripts/check_switch_early_20261108.py
       - name: Verify existing public paired and algebra checks
         run: |
           python experiments/check_parameter_matched_evidence.py
