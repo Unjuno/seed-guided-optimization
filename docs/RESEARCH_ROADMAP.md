@@ -1,6 +1,6 @@
 # Research roadmap: evidence, not desired positive findings
 
-Updated2026-11-07. The owner requested autonomous experiment progress, including informative unexpected findings. [AUTONOMOUS_RESEARCH_SCOPE](AUTONOMOUS_RESEARCH_SCOPE.md) defines operational bounds. X announcement remains paused.
+Updated2026-11-08. The owner requested autonomous experiment progress, including informative unexpected findings. [AUTONOMOUS_RESEARCH_SCOPE](AUTONOMOUS_RESEARCH_SCOPE.md) defines operational bounds. X announcement remains paused.
 
 A completed experiment is not necessarily a resolved mechanism. Preserve its registered decision, interval and alternatives. Do not alter thresholds, metrics, repetitions or pools to turn a valid negative result into PASS.
 
@@ -19,12 +19,15 @@ A completed experiment is not necessarily a resolved mechanism. Preserve its reg
 | Objective × estimator × optimizer-configuration validation, Issue125 | **Completed; mixed evidence** | Full16 estimator contrasts PASS in AdamW and SGD configuration, but unequal contributor count forbids cost inference. AdamW interaction PASS after Holm7; SGD interaction and configuration difference unconfirmed. [Frozen result](ROADMAP_VALIDATION_20260926_RESULT.md). |
 | Initialization-seed × Muon/AdamW switching (local pilot, Issue129) | **Completed locally; automated controller/early seed advantage unestablished** | 192 trajectories: D vs A +0.06970 CE (Holm5 PASS); D vs M +0.00819 (NOT SUPPORTED); D vs one-way switch at step100 −0.02567 (D superiority NOT SUPPORTED); early D seed selection −0.00313 (NOT SUPPORTED). [Retrospective archive](OPTIMIZER_SWITCH_SEED_RESULT_20261031.md), **not external preregistration**. Raw ZIP not yet mirrored. |
 | Fixed Muon→AdamW switching-time boundary, Issue131 | **Completed: T100 peak among80/100/120 NOT SUPPORTED** | Fresh 12 pools, 192 states; registered Holm3 T100−M +0.025832 CE PASS, T100−T80 −0.010962 NOT SUPPORTED (inverse all12 pools), T100−T120 +0.013302 PASS. Shifted CE favors T80, clean CE favors M. Objective-weight sample boundaries are exploratory, not deployable; [full study](SWITCH_TIME_BOUNDARY_RESULT_20261107.md). |
+| Early fixed Muon→AdamW switch and clean guardrail, Issue133 | **Completed: T60 local peak NOT SUPPORTED, clean noninferiority FAILED** | 12 fresh transformation pools; Holm3 T60−M +.035709CE PASS, T60−T40 +.020442PASS, T60−T80 +.004231 NOT SUPPORTED. Clean T60−M penalty +.108709CE; margin+.05 noninferiority p=.9884. [Evidence](SWITCH_TIME_EARLY_RESULT_20261108.md). |
 | Optimizer-aware long-horizon switching/seed selection | **OPEN — separate confirmatory design needed** | A five-update control test missed 20/48 same-state cases where step100→200 continuation preferred AdamW. Next calibrate long-horizon prediction and update norm on development-only data, then fresh pools/images and fixed budget against strong fixed-switch baseline. Do not reuse old test to select trigger. |
 | GPU matched-cost value, Issue2 | Measurement resource-dependent | CPU evidence and a runnable harness are not GPU evidence. Use only actual authorized hardware; no automatic paid provisioning. |
 
 ## Current next execution
 
 The existing Issue124/Issue125 finite queue has been **executed and independently audited**. PR #126 archives the implementation and pooled results; [six-pool scientific outcomes](ROADMAP_VALIDATION_20260926_RESULT.md) distinguish scientific support/non-support from technical job completion. Do **not** rerun valid experiments or change frozen gates in response to mixed outcomes.
+
+Issue133 now extends the boundary window to40/60/80: earlier T40 is worse than T60 on transformed CE; T60 fails to beat T80 and fails to preserve clean CE within +.05. A hard switching time alone does not solve the clean-shift multiobjective tradeoff. The next single bounded CPU experiment could test **softly blended Muon/AdamW hidden updates** with clean noninferiority as a simultaneous requirement, or new-image transfer. The old test distribution must not be used to select a winning interpolation coefficient and then confirm it on itself.
 
 New Issue131 resolves only the **registered 80/100/120 time-window comparison**; the narrow step100 peak is **not supported**. A fresh independent test of an earlier switching window (e.g. around60) and clean/shifted guardrail is needed before claiming an optimal time. The decision boundary depends on objective mixture and the remaining compute budget; existing after-outcome sample weights w=.562/.624 are not validated gates.
 
