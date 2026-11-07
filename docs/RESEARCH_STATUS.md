@@ -2,6 +2,20 @@
 
 Updated 2026-11-08.
 
+## Prospective dual-optimizer hidden-proposal blending, Issue135 (2026-11-08)
+
+[Full report](OPTIMIZER_BLEND_CLEAN_RESULT_20261108.md) and [pre-outcome registered Issue135](https://github.com/Unjuno/seed-guided-optimization/issues/135). New 12 independent transformation pools×4 fresh initializer keys×4 policies (M/B25/B50/hard T80) = **192 completed training states, 38,400 updates**, all globally sealed before heldout. Same historical Digits evaluation images; no independent new-image replication. Both hidden Muon/AdamW shadow moments were updated from the same realized gradient, but the hidden proposals were blended with alpha .25 or .5 for steps81..200.
+
+**All four registered Holm4 one-sided components PASS:**
+- B25 vs Muon shifted CE improvement **+0.031007 CE** CI[+.025846,+.036167], Holm4 p=8.51e−8, **SUPPORT**.
+- B25 clean CE penalty **−0.014780 CE** CI[−.047831,+.018271], clean noninferiority H0 penalty≥+.05, Holm4 p=.001227, **SUPPORT**.
+- B50 shifted CE improvement **+0.043194 CE** CI[+.034604,+.051783], Holm4 p=3.99e−7, **SUPPORT**.
+- B50 clean penalty **−0.012090 CE** CI[−.065816,+.041636], noninferiority p=.013651, **SUPPORT**.
+
+Both preregistered joint average clean-safe shift-benefit gates PASS **for this generator/pool set**. **Not every pool is clean-safe:** +.05 CE clean margin exceeded in **1/12 B25 and 3/12 B50 pools** (max B50 +.156 CE). Noninferiority != statistically proven clean superiority. Sample B50 means also beat hard T80 on both clean/shifted CE, but that was **secondary/post-outcome only**. Adopted hidden norm averages M .08248, B25 .08290, B50 .09256, T80 .12836: a norm/step-size explanation remains. No unique mechanism or seed-selection effect established.
+
+**Audit and incident:** 192 model tensor/file hashes, 38,400 alpha trace updates, 23,040 common-prefix matches, 9,216 transformed+192 clean evaluation rows, four Holm4 statistics; 3 bitwise 200-step retrains+2 image reinferences. The originally frozen output aggregator stopped at final `NameError: statistics not defined`; the registered training/eval source is unchanged and **independent raw-count auditor** produced final statistics, matching the original partial four-row CSV. Repo contains public read-only statistics checker and results; full code+192 states are in owner ZIP, not GitHub. X announcement still paused.
+
 ## Fresh early-switch confirmation and clean guardrail, Issue133 (2026-11-08)
 
 [Full prospective result](SWITCH_TIME_EARLY_RESULT_20261108.md) and [pre-outcome Issue133](https://github.com/Unjuno/seed-guided-optimization/issues/133): **12 new independent transform pools×4 new initializations×4 fixed Muon/AdamW policies=192 models**. Globally seal all checkpoints before constructing heldout environments; 38,400 training updates, 9,216 heldout rows, 192 clean rows. Independent SHA+integer-count audit and all registered decisions checked.
