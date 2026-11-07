@@ -20,6 +20,11 @@ on:
       - 'scripts/check_switch_seed_results.py'
       - 'scripts/check_switch_time_boundary_20261107.py'
       - 'scripts/check_switch_early_20261108.py'
+      - 'scripts/check_optimizer_blend_20261108.py'
+      - 'docs/OPTIMIZER_BLEND_CLEAN_RESULT_20261108.md'
+      - 'results/optimizer_blend_20261108_primary.csv'
+      - 'results/optimizer_blend_20261108_pool_effects.csv'
+      - 'results/optimizer_blend_20261108_policy_means.csv'
       - 'docs/SWITCH_TIME_EARLY_RESULT_20261108.md'
       - 'results/switch_early_20261108_primary.csv'
       - 'results/switch_early_20261108_pools.csv'
@@ -60,6 +65,11 @@ on:
       - 'scripts/check_switch_seed_results.py'
       - 'scripts/check_switch_time_boundary_20261107.py'
       - 'scripts/check_switch_early_20261108.py'
+      - 'scripts/check_optimizer_blend_20261108.py'
+      - 'docs/OPTIMIZER_BLEND_CLEAN_RESULT_20261108.md'
+      - 'results/optimizer_blend_20261108_primary.csv'
+      - 'results/optimizer_blend_20261108_pool_effects.csv'
+      - 'results/optimizer_blend_20261108_policy_means.csv'
       - 'docs/SWITCH_TIME_EARLY_RESULT_20261108.md'
       - 'results/switch_early_20261108_primary.csv'
       - 'results/switch_early_20261108_pools.csv'
@@ -107,6 +117,8 @@ jobs:
         run: python scripts/check_switch_time_boundary_20261107.py
       - name: Recalculate early-switch registered Holm3 and clean guardrail
         run: python scripts/check_switch_early_20261108.py
+      - name: Recalculate registered four-component optimizer-blend clean noninferiority
+        run: python scripts/check_optimizer_blend_20261108.py
       - name: Verify existing public paired and algebra checks
         run: |
           python experiments/check_parameter_matched_evidence.py

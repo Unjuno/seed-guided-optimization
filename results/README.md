@@ -4,6 +4,10 @@
 
 これは実験の証拠を保管する場所です。探索的な集計、副次評価、事前登録した主要評価を区別してください。**同じ「改善値」でも比較対象が違う表を、手法のランキングとして並べないでください。**
 
+## Issue135：混合hidden更新のclean非劣性＋変換CE改善（2026年11月8日）
+
+[登録済みHolm4の4検定](optimizer_blend_20261108_primary.csv)、[12群×4比較のCE差](optimizer_blend_20261108_pool_effects.csv)、[M/B25/B50/T80の平均値](optimizer_blend_20261108_policy_means.csv)。両混合方式の**群平均**clean非劣性は支持される一方、個別pool保証はない。public `python scripts/check_optimizer_blend_20261108.py` は保存CSVからのみ検算し、元の192 stateとraw-image再推論を検査しない。[詳細結果・陰性事実](../docs/OPTIMIZER_BLEND_CLEAN_RESULT_20261108.md)。
+
 ## 2026年11月8日：早期切替Issue133の公開集計
 
 [登録3検定](switch_early_20261108_primary.csv)、[12環境群×3差](switch_early_20261108_pools.csv)、[clean非劣性の12差](switch_early_20261108_clean_guardrail_pools.csv)、[4方式の平均指標](switch_early_20261108_policy_means.csv)。60切替の40/80間のピークは未支持、clean非劣性も未支持。\`python scripts/check_switch_early_20261108.py\` はCSVの統計だけ再計算する。全状態・raw画像を検査したとの主張ではない。[結果の全文](../docs/SWITCH_TIME_EARLY_RESULT_20261108.md)。
