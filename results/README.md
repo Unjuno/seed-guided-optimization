@@ -4,6 +4,10 @@
 
 これは実験の証拠を保管する場所です。探索的な集計、副次評価、事前登録した主要評価を区別してください。**同じ「改善値」でも比較対象が違う表を、手法のランキングとして並べないでください。**
 
+## 2026年11月8日：早期切替Issue133の公開集計
+
+[登録3検定](switch_early_20261108_primary.csv)、[12環境群×3差](switch_early_20261108_pools.csv)、[clean非劣性の12差](switch_early_20261108_clean_guardrail_pools.csv)、[4方式の平均指標](switch_early_20261108_policy_means.csv)。60切替の40/80間のピークは未支持、clean非劣性も未支持。\`python scripts/check_switch_early_20261108.py\` はCSVの統計だけ再計算する。全状態・raw画像を検査したとの主張ではない。[結果の全文](../docs/SWITCH_TIME_EARLY_RESULT_20261108.md)。
+
 ## 2026年11月7日：切替時刻の登録比較（Issue131）
 
 [12プール・3主要検定](switch_time_20261107_primary.csv)、[12プール×3主要差](switch_time_20261107_pool_differences.csv)、[4方策のclean/shifted平均](switch_time_20261107_policy_means.csv)。**T100対T80は逆向きの差**であり、登録仮説としてはNOT SUPPORTED。clean/shiftedの目的混合w=0.562/0.624は**結果後の探索閾値**で、実用閾値ではない。CSVの統計のみ再計算：python scripts/check_switch_time_boundary_20261107.py。全192モデルの生重み監査には、チャットで別途配布した完全証拠ZIPが必要。[結果・限界](../docs/SWITCH_TIME_BOUNDARY_RESULT_20261107.md)。
